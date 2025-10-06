@@ -1,4 +1,6 @@
 # Shop Tycoon - Prototipo
+[![Live Demo](https://img.shields.io/badge/demo-visit-blue)](https://immacolato.github.io/shop-tycoon/)
+[![Deploy](https://github.com/immacolato/shop-tycoon/actions/workflows/deploy.yml/badge.svg)](https://github.com/immacolato/shop-tycoon/actions)
 
 Progetto minimo di un gioco 2D gestionale (top-down) in cui gestisci un negozio: clienti come puntini, scaffali, prezzi, rifornimenti, marketing ed espansione.
 
@@ -39,3 +41,16 @@ serve ./ -p 5000
 Il progetto è intenzionalmente leggero e senza bundler. Puoi convertirlo in un'app più complessa usando un bundler (Vite, Webpack) se necessario.
 
 Buon divertimento e dimmi le modifiche che vuoi aggiungere!
+
+## Salvataggio ed autosave
+Il prototipo ora supporta salvataggio locale tramite `localStorage`. In pagina trovi i pulsanti "Salva", "Carica" e "Reset". Il gioco effettua anche un autosave ogni 10 secondi.
+
+## Deploy rapido
+È stato aggiunto uno script `deploy` che usa `gh-pages` per pubblicare la cartella corrente su GitHub Pages. Per usarlo:
+
+```bash
+npm install --save-dev gh-pages
+npm run deploy
+```
+
+Questo pubblicherà i file sul branch `gh-pages` del repository.
