@@ -279,46 +279,54 @@ function updateHUD(){
   document.getElementById('spawn-interval').textContent = (state.spawnInterval * (state.marketingBoost?0.6:1)).toFixed(2);
 }
 
-document.getElementById('marketing').onclick = ()=>{
-  const cost = 50;
-  if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
-  state.money -= cost;
-  state.marketingBoost = 1;
-  state.marketingTimer = 20;
-  log('Campagna marketing attivata: +clienti per 20s');
-  updateHUD();
-  saveGame();
-};
-document.getElementById('restock-all').onclick = ()=>{
-  const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
-  if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto'); return; }
-  state.money -= cost;
-  state.products.forEach(p=> p.stock += 3);
-  renderItemsPanel(); updateHUD(); log('Rifornimento completo');
-  saveGame();
-};
-document.getElementById('expand').onclick = ()=>{
-  const cost = 200;
-  if(state.money < cost){ log('Non hai abbastanza soldi per espandere'); return; }
-  state.money -= cost;
-  state.clientCap += 10;
-  const nx = 200 + Math.random()*520, ny = 120 + Math.random()*360;
-  state.shelves.push({x:nx,y:ny,w:80,h:24,productIndex: (state.products.length-1) });
-  log('Negozio espanso: +10 capienza'); renderItemsPanel(); updateHUD();
-  saveGame();
-};
 
-// Nuovi bottoni per salvataggio
-document.getElementById('save-game').onclick = ()=>{
-  saveGame();
-  log('Gioco salvato manualmente!');
-};
 
-document.getElementById('reset-game').onclick = ()=>{
-  if(confirm('Sei sicuro di voler resettare tutto il progresso? Questa azione non può essere annullata.')) {
-    resetGame();
-  }
-};
+function setupEventListeners() {
+  // Bottoni principali
+  document.getElementById('marketing').onclick = ()=>{
+    const cost = 50;
+    if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
+    state.money -= cost;
+    state.marketingBoost = 1;
+    state.marketingTimer = 20;
+    log('Campagna marketing attivata: +clienti per 20s');
+    updateHUD();
+    saveGame();
+  };
+  
+  document.getElementById('restock-all').onclick = ()=>{
+    const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
+    if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto'); return; }
+    state.money -= cost;
+    state.products.forEach(p=> p.stock += 3);
+    renderItemsPanel(); updateHUD(); log('Rifornimento completo');
+    saveGame();
+  };
+  
+  document.getElementById('expand').onclick = ()=>{
+    const cost = 200;
+    if(state.money < cost){ log('Non hai abbastanza soldi per espandere'); return; }
+    state.money -= cost;
+    state.clientCap += 10;
+    const nx = 200 + Math.random()*520, ny = 120 + Math.random()*360;
+    state.shelves.push({x:nx,y:ny,w:80,h:24,productIndex: (state.products.length-1) });
+    log('Negozio espanso: +10 capienza'); renderItemsPanel(); updateHUD();
+    saveGame();
+  };
+
+  // Bottoni di salvataggio
+  document.getElementById('save-game').onclick = ()=>{
+    saveGame();
+    log('Gioco salvato manualmente!');
+  };
+
+  document.getElementById('reset-game').onclick = ()=>{
+    if(confirm('Sei sicuro di voler resettare tutto il progresso? Questa azione non può essere annullata.')) {
+      resetGame();
+    }
+  };
+}
 
 initShop();
+setupEventListeners();
 requestAnimationFrame(frame);
