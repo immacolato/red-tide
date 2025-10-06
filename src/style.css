@@ -2,7 +2,16 @@
 html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b0b0b,#141414);color:#eee;font-family:system-ui,Segoe UI,Roboto}
 #container{display:flex;gap:12px;height:100vh;padding:12px;box-sizing:border-box}
 #game{flex:1; background:linear-gradient(#1a2,#091); border-radius:8px; position:relative; overflow:hidden; display:flex;align-items:center;justify-content:center}
-canvas{background:#072; display:block; width:100%; height:100%}
+canvas{
+  background:#072; 
+  display:block; 
+  width:100%; 
+  height:100%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
 #ui{width:360px; background:var(--panel); border-radius:8px; padding:12px; box-sizing:border-box; display:flex;flex-direction:column; gap:10px}
 .header{display:flex;justify-content:space-between;align-items:center}
 .money{font-weight:700;color:var(--accent)}

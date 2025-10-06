@@ -7,7 +7,28 @@
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+
+// Supporto per display ad alta densità (Retina/HiDPI)
+function setupHighDPICanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  // Imposta la dimensione fisica del canvas
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  
+  // Scala il context per compensare il device pixel ratio
+  ctx.scale(dpr, dpr);
+  
+  // Imposta la dimensione CSS del canvas
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  
+  return { width: rect.width, height: rect.height };
+}
+
+const canvasSize = setupHighDPICanvas();
+let W = canvasSize.width, H = canvasSize.height;
 
 const state = {
   money: 150,
@@ -248,6 +269,10 @@ function update(dt){
 function render(){
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = '#133'; ctx.fillRect(0,0,W,H);
+  
+  // Migliora la qualità del testo
+  ctx.textBaseline = 'top';
+  ctx.imageSmoothingEnabled = false;
   for(const s of state.shelves){
     ctx.fillStyle = '#7a4'; ctx.fillRect(s.x, s.y, s.w, s.h);
     const prod = state.products[s.productIndex];
@@ -311,7 +336,17 @@ function updateHUD(){
 
 
 
+// Gestisce il ridimensionamento della finestra
+function handleResize() {
+  const newSize = setupHighDPICanvas();
+  // Aggiorna le dimensioni globali
+  W = newSize.width;
+  H = newSize.height;
+}
+
 function setupEventListeners() {
+  // Event listener per il ridimensionamento
+  window.addEventListener('resize', handleResize);
   // Bottoni principali
   document.getElementById('marketing').onclick = ()=>{
     const cost = 50;
