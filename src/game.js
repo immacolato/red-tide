@@ -180,10 +180,35 @@ function stepClient(client, dt){
   client.timeAlive += dt;
   if(client.timeAlive > 120){ client.state='leave'; }
   if(client.state === 'leave'){
-    let tx = client.x < W/2 ? -20 : W+20;
-    let ty = client.y < H/2 ? -20 : H+20;
-    moveToward(client, tx, ty, 80, dt);
-    if(client.x < -50 || client.x > W+50 || client.y < -50 || client.y > H+50) return 'remove';
+    // Trova l'uscita più vicina (bordo più vicino)
+    const distToLeft = client.x;
+    const distToRight = W - client.x;
+    const distToTop = client.y;
+    const distToBottom = H - client.y;
+    
+    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+    let tx, ty;
+    
+    if(minDist === distToLeft) {
+      tx = -30; ty = client.y;
+    } else if(minDist === distToRight) {
+      tx = W + 30; ty = client.y;
+    } else if(minDist === distToTop) {
+      tx = client.x; ty = -30;
+    } else {
+      tx = client.x; ty = H + 30;
+    }
+    
+    moveToward(client, tx, ty, 100, dt);
+    
+    // Rimozione più aggressiva per evitare clienti "fantasma"
+    if(client.x < -40 || client.x > W+40 || client.y < -40 || client.y > H+40) return 'remove';
+    
+    // Timeout di sicurezza: rimuovi il cliente se è in stato 'leave' da troppo tempo
+    if(!client.leaveTimer) client.leaveTimer = 0;
+    client.leaveTimer += dt;
+    if(client.leaveTimer > 5) return 'remove'; // Massimo 5 secondi per uscire
+    
     return;
   }
   if(client.state === 'toShelf'){
@@ -283,7 +308,24 @@ function update(dt){
   for(let i = state.clients.length-1; i>=0; i--){
     const c = state.clients[i];
     const res = stepClient(c, dt);
-    if(res === 'remove') state.clients.splice(i,1);
+    if(res === 'remove') {
+      state.clients.splice(i,1);
+      continue;
+    }
+    
+    // Sistema di pulizia: rimuovi clienti con problemi
+    if(c.timeAlive > 150) { // Timeout assoluto di 2.5 minuti
+      state.clients.splice(i,1);
+      log('Cliente rimosso per timeout');
+      continue;
+    }
+    
+    // Rimuovi clienti fuori dai bordi logici
+    if(c.x < -100 || c.x > W+100 || c.y < -100 || c.y > H+100) {
+      state.clients.splice(i,1);
+      log('Cliente rimosso fuori dai bordi');
+      continue;
+    }
   }
   // Rimuovo il limite rigido che tagliava i clienti
   // if(state.clients.length > state.clientCap) state.clients.splice(state.clientCap);
@@ -390,6 +432,17 @@ function updateHUD(){
   document.getElementById('client-count').textContent = state.clients.length;
   document.getElementById('client-cap').textContent = state.clientCap;
   document.getElementById('spawn-interval').textContent = (state.spawnInterval * (state.marketingBoost?0.6:1)).toFixed(2);
+  
+  // Debug: conta clienti per stato (solo se ci sono problemi)
+  if(state.clients.length > state.clientCap * 0.9) {
+    const states = {};
+    state.clients.forEach(c => {
+      states[c.state] = (states[c.state] || 0) + 1;
+    });
+    if(states.leave > 10) {
+      log('DEBUG: Molti clienti in uscita (' + states.leave + ')');
+    }
+  }
 }
 
 
@@ -451,6 +504,18 @@ function setupEventListeners() {
     if(confirm('Sei sicuro di voler resettare tutto il progresso? Questa azione non può essere annullata.')) {
       resetGame();
     }
+  };
+
+  // Bottone di emergenza per pulire clienti bloccati
+  document.getElementById('clear-clients').onclick = ()=>{
+    const beforeCount = state.clients.length;
+    state.clients = state.clients.filter(c => {
+      // Mantieni solo clienti che sono visibili e in stato normale
+      return c.x >= -50 && c.x <= W+50 && c.y >= -50 && c.y <= H+50 && c.timeAlive < 60;
+    });
+    const removed = beforeCount - state.clients.length;
+    log('Rimossi ' + removed + ' clienti bloccati');
+    updateHUD();
   };
 }
 
