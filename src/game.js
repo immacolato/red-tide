@@ -130,6 +130,7 @@ function initShop(){
   
   renderItemsPanel();
   updateHUD();
+  updateButtonTexts();
 }
 
 function spawnClient(){
@@ -293,7 +294,9 @@ let lastSaveTime = 0;
 
 function update(dt){
   state.time += dt;
-  const effectiveSpawnInterval = Math.max(0.25, state.spawnInterval * (state.marketingBoost>0 ? 0.6 : 1));
+  // Marketing cumulativo: ogni livello riduce il tempo di spawn del 20%
+  const marketingFactor = state.marketingBoost > 0 ? Math.pow(0.8, state.marketingBoost) : 1;
+  const effectiveSpawnInterval = Math.max(0.25, state.spawnInterval * marketingFactor);
   state.spawnTimer += dt;
   if(state.spawnTimer >= effectiveSpawnInterval){
     state.spawnTimer = 0;
@@ -481,12 +484,31 @@ function renderItemsPanel(){
   });
 }
 
+function updateButtonTexts() {
+  // Aggiorna il costo dinamico del rifornimento
+  const restockCost = state.products.reduce((s,p)=>s + p.cost*3,0);
+  document.getElementById('restock-all').textContent = 'Rifornisci tutto (€' + restockCost.toFixed(0) + ')';
+  
+  // Aggiorna il marketing con info sul livello
+  const marketingText = state.marketingBoost > 0 ? 
+    'Marketing (€50) - Livello ' + state.marketingBoost :
+    'Marketing (€50) - +spawn';
+  document.getElementById('marketing').textContent = marketingText;
+}
+
 function updateHUD(){
   document.getElementById('money').textContent = '€' + state.money.toFixed(2);
   document.getElementById('time').textContent = Math.floor(state.time);
   document.getElementById('client-count').textContent = state.clients.length;
   document.getElementById('client-cap').textContent = state.clientCap;
-  document.getElementById('spawn-interval').textContent = (state.spawnInterval * (state.marketingBoost?0.6:1)).toFixed(2);
+  
+  // Mostra il spawn interval aggiornato con il marketing cumulativo
+  const marketingFactor = state.marketingBoost > 0 ? Math.pow(0.8, state.marketingBoost) : 1;
+  const currentSpawnInterval = state.spawnInterval * marketingFactor;
+  document.getElementById('spawn-interval').textContent = currentSpawnInterval.toFixed(2);
+  
+  // Aggiorna i testi dei bottoni
+  updateButtonTexts();
   
   // Debug: conta clienti per stato (solo se ci sono problemi)
   if(state.clients.length > state.clientCap * 0.9) {
@@ -518,9 +540,14 @@ function setupEventListeners() {
     const cost = 50;
     if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
     state.money -= cost;
-    state.marketingBoost = 1;
-    state.marketingTimer = 20;
-    log('Campagna marketing attivata: +clienti per 20s');
+    
+    // Il marketing si cumula: ogni campagna aumenta l'effetto
+    state.marketingBoost = Math.min(5, state.marketingBoost + 1); // Massimo 5x
+    state.marketingTimer = Math.max(state.marketingTimer, 0) + 20; // Estende la durata
+    
+    const effectiveness = 1 - (0.2 * state.marketingBoost); // Ogni boost riduce il tempo del 20%
+    log('Campagna marketing attivata (livello ' + state.marketingBoost + ')');
+    log('Spawn rate migliorato per ' + Math.ceil(state.marketingTimer) + 's');
     updateHUD();
     saveGame();
   };
@@ -530,7 +557,9 @@ function setupEventListeners() {
     if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto'); return; }
     state.money -= cost;
     state.products.forEach(p=> p.stock += 3);
-    renderItemsPanel(); updateHUD(); log('Rifornimento completo');
+    renderItemsPanel(); updateHUD(); 
+    log('Rifornimento completo - Costo: €' + cost.toFixed(2));
+    updateButtonTexts(); // Aggiorna i testi dei bottoni
     saveGame();
   };
   
