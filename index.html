@@ -26,28 +26,24 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">⏱️</div>
-        <div class="stat-info">
-          <div class="stat-label">Tempo</div>
-          <div class="stat-value" id="time">0s</div>
-        </div>
+        <div class="stat-label">Tempo</div>
+        <div class="stat-value" id="time">0s</div>
       </div>
       
       <div class="stat-card">
         <div class="stat-icon">👥</div>
-        <div class="stat-info">
-          <div class="stat-label">Clienti</div>
-          <div class="stat-value"><span id="client-count">0</span>/<span id="client-cap">50</span></div>
-        </div>
+        <div class="stat-label">Clienti</div>
+        <div class="stat-value"><span id="client-count">0</span>/<span id="client-cap">50</span></div>
       </div>
       
       <div class="stat-card">
         <div class="stat-icon">⚡</div>
-        <div class="stat-info">
-          <div class="stat-label">Spawn Rate</div>
-          <div class="stat-value" id="spawn-interval">2.0s</div>
-        </div>
+        <div class="stat-label">Spawn Rate</div>
+        <div class="stat-value" id="spawn-interval">2.0s</div>
       </div>
     </div>
+    
+    <div class="divider"></div>
     
     <div class="panel metrics-panel">
       <div class="panel-title">📊 Metriche Negozio</div>
@@ -73,12 +69,27 @@
           <div class="progress-fill satisfaction" id="satisfaction-bar"></div>
         </div>
       </div>
+      
+      <div class="metric">
+        <div class="metric-header">
+          <span class="metric-icon">💰</span>
+          <span class="metric-name">Attrattività Prezzi</span>
+          <span class="metric-value" id="price-attractiveness-value">50%</span>
+        </div>
+        <div class="progress-bar modern">
+          <div class="progress-fill price-attractiveness" id="price-attractiveness-bar"></div>
+        </div>
+      </div>
     </div>
+
+    <div class="divider"></div>
 
     <div class="panel products-panel">
       <div class="panel-title">🛍️ Prodotti del Negozio</div>
       <div id="items-list" class="products-grid"></div>
     </div>
+
+    <div class="divider"></div>
 
     <div class="panel actions-panel">
       <div class="panel-title">🎯 Azioni Strategiche</div>
@@ -108,13 +119,17 @@
         </button>
       </div>
       
-      <div class="panel-title" style="margin-top:16px">⚙️ Strumenti</div>
+      <div class="section-separator"></div>
+      
+      <div class="panel-title">⚙️ Strumenti</div>
       <div class="utility-buttons">
         <button id="save-game" class="utility-btn">💾 Salva</button>
         <button id="reset-game" class="utility-btn danger">🔄 Reset</button>
         <button id="clear-clients" class="utility-btn">🧹 Pulisci</button>
       </div>
     </div>
+
+    <div class="divider"></div>
 
     <div class="panel log-panel">
       <div class="panel-title">📜 Log Attività</div>

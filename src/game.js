@@ -47,6 +47,8 @@ const state = {
   satisfactionHistory: [], // Ultimi eventi per calcolare trend
   marketingPower: 0, // 0-100, potenza marketing attuale
   maxMarketingPower: 0, // Massimo raggiunto (per la barra)
+  lastPriceFeedback: 0, // Per il feedback periodico sui prezzi
+  moneyEffects: [], // Effetti visivi di denaro fluttuante
 };
 
 // Util
@@ -145,7 +147,7 @@ function addSatisfactionEvent(change, reason) {
   }
 }
 
-// Calcola il moltiplicatore di spawn basato su marketing e soddisfazione
+// Calcola il moltiplicatore di spawn basato su marketing, soddisfazione e prezzi
 function getSpawnMultiplier() {
   // Componente marketing (0.5x - 2x)
   const marketingFactor = 0.5 + (state.marketingPower / 100) * 1.5;
@@ -153,8 +155,116 @@ function getSpawnMultiplier() {
   // Componente soddisfazione (0.3x - 1.5x)
   const satisfactionFactor = 0.3 + (state.satisfaction / 100) * 1.2;
   
-  // Combinazione
-  return marketingFactor * satisfactionFactor;
+  // Componente prezzi: calcola l'attrattività dei prezzi
+  const priceFactor = getPriceAttractiveness();
+  
+  // Combinazione: marketing e soddisfazione sono moltiplicativi, 
+  // prezzi hanno un peso minore per non essere troppo dominanti
+  const baseMultiplier = marketingFactor * satisfactionFactor;
+  return baseMultiplier * (0.7 + priceFactor * 0.3);
+}
+
+// Calcola l'attrattività complessiva dei prezzi (0-1, dove 1 = molto attraente)
+function getPriceAttractiveness() {
+  if(state.products.length === 0) return 0.5;
+  
+  let totalAttractiveness = 0;
+  let weightedSum = 0;
+  
+  for(const product of state.products) {
+    // Calcola il markup del prodotto (quanto sopra il costo)
+    const markup = (product.price - product.cost) / product.cost;
+    
+    // Attrattività basata sul markup:
+    // - markup 0-0.5 (50% sopra costo) = molto attraente (0.8-1.0)
+    // - markup 0.5-1.5 (150% sopra costo) = medio attraente (0.5-0.8)  
+    // - markup >1.5 = poco attraente (0.2-0.5)
+    let attractiveness;
+    if(markup <= 0.5) {
+      attractiveness = 0.8 + (0.5 - markup) * 0.4; // 0.8-1.0
+    } else if(markup <= 1.5) {
+      attractiveness = 0.5 + (1.5 - markup) * 0.3; // 0.5-0.8
+    } else {
+      const penalty = Math.min(markup - 1.5, 2.0); // Cap the penalty
+      attractiveness = Math.max(0.1, 0.5 - penalty * 0.2); // 0.1-0.5
+    }
+    
+    // Peso basato sullo stock: prodotti con più stock influenzano di più
+    const weight = Math.max(1, product.stock);
+    totalAttractiveness += attractiveness * weight;
+    weightedSum += weight;
+  }
+  
+  return weightedSum > 0 ? totalAttractiveness / weightedSum : 0.5;
+}
+
+// Sistema di effetti visivi per il denaro
+function createMoneyEffect(x, y, amount) {
+  const effect = {
+    x: x,
+    y: y,
+    startY: y,
+    amount: amount,
+    life: 2.0, // Durata in secondi
+    maxLife: 2.0,
+    vx: rnd(-20, 20), // Velocità orizzontale casuale
+    vy: rnd(-60, -40), // Velocità verticale (verso l'alto)
+    gravity: 30 // Gravità per effetto realistico
+  };
+  state.moneyEffects.push(effect);
+}
+
+function updateMoneyEffects(dt) {
+  for(let i = state.moneyEffects.length - 1; i >= 0; i--) {
+    const effect = state.moneyEffects[i];
+    
+    // Aggiorna posizione
+    effect.x += effect.vx * dt;
+    effect.y += effect.vy * dt;
+    effect.vy += effect.gravity * dt; // Applica gravità
+    
+    // Aggiorna vita
+    effect.life -= dt;
+    
+    // Rimuovi se scaduto
+    if(effect.life <= 0) {
+      state.moneyEffects.splice(i, 1);
+    }
+  }
+}
+
+function renderMoneyEffects() {
+  state.moneyEffects.forEach(effect => {
+    const alpha = effect.life / effect.maxLife; // Fade out
+    const scale = 0.8 + (1 - alpha) * 0.4; // Scala leggermente
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `${14 * scale}px Inter, Arial, sans-serif`;
+    ctx.fontWeight = 'bold';
+    ctx.textAlign = 'center';
+    
+    // Ombra del testo
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillText(`+€${effect.amount.toFixed(2)}`, effect.x + 2, effect.y + 2);
+    
+    // Colore dinamico basato sull'importo
+    let color;
+    if(effect.amount <= 2) {
+      color = '#90EE90'; // Verde chiaro per importi bassi
+    } else if(effect.amount <= 5) {
+      color = '#FFD700'; // Dorato per importi medi
+    } else if(effect.amount <= 10) {
+      color = '#FF6347'; // Arancione per importi alti
+    } else {
+      color = '#FF1493'; // Rosa per importi molto alti
+    }
+    
+    ctx.fillStyle = color;
+    ctx.fillText(`+€${effect.amount.toFixed(2)}`, effect.x, effect.y);
+    
+    ctx.restore();
+  });
 }
 
 function initShop(){
@@ -313,6 +423,9 @@ function stepClient(client, dt){
         state.money += profit;
         log('Venduto', product.name, 'Prezzo', product.price.toFixed(2),'Profitto', profit.toFixed(2));
         
+        // Effetto visivo del denaro guadagnato (mostra il prezzo di vendita)
+        createMoneyEffect(s.x + s.w/2, s.y, product.price);
+        
         // Cliente soddisfatto: aumenta soddisfazione
         addSatisfactionEvent(1, 'Vendita completata');
         
@@ -403,6 +516,24 @@ function update(dt){
       log('ATTENZIONE: Prodotti esauriti e soldi insufficienti per rifornire!');
     }
   }
+
+  // Feedback periodico sui prezzi (ogni 30 secondi)
+  if(Math.floor(state.time) % 30 === 0 && Math.floor(state.time) > 0 && Math.floor(state.time) !== state.lastPriceFeedback) {
+    state.lastPriceFeedback = Math.floor(state.time);
+    const priceAttractiveness = getPriceAttractiveness();
+    
+    if(priceAttractiveness > 0.8) {
+      log('📊 I tuoi prezzi attraggono molti clienti! Considera se aumentare leggermente per più profitto');
+    } else if(priceAttractiveness < 0.4) {
+      log('📊 I prezzi sono alti, pochi clienti si avvicinano. Considera di ridurre per aumentare le vendite');
+    } else if(priceAttractiveness > 0.6) {
+      log('📊 Buon equilibrio tra prezzi e affluenza clienti');
+    }
+  }
+  
+  // Aggiorna gli effetti visivi di denaro
+  updateMoneyEffects(dt);
+  
   // La logica di marketing decay è ora gestita sopra
   for(let i = state.clients.length-1; i>=0; i--){
     const c = state.clients[i];
@@ -512,6 +643,9 @@ function render(){
   ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(8,8,220,48);
   ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.fillText('€' + state.money.toFixed(2), 16, 30);
   ctx.font = '12px sans-serif'; ctx.fillStyle = '#ccc'; ctx.fillText('Clienti: ' + state.clients.length, 120, 30);
+  
+  // Effetti di denaro fluttuante
+  renderMoneyEffects();
 }
 
 function renderItemsPanel(){
@@ -530,9 +664,13 @@ function renderItemsPanel(){
                       p.stock < 5 ? 'var(--accent-warning)' : 
                       'var(--accent-success)';
     
-    // Profitto per unità
+    // Profitto per unità e markup
     const profit = p.price - p.cost;
     const profitColor = profit > 0 ? 'var(--accent-success)' : 'var(--accent-danger)';
+    const markup = (p.price - p.cost) / p.cost * 100;
+    const markupColor = markup < 50 ? 'var(--accent-success)' : 
+                       markup < 120 ? 'var(--accent-warning)' : 
+                       'var(--accent-danger)';
     
     div.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;flex:1">
@@ -543,8 +681,9 @@ function renderItemsPanel(){
             <span style="color:var(--text-secondary)">Prezzo: <span style="color:var(--accent-primary)">€${p.price.toFixed(2)}</span></span>
             <span style="color:var(--text-secondary)">Profitto: <span style="color:${profitColor}">€${profit.toFixed(2)}</span></span>
           </div>
-          <div style="font-size:11px;margin-top:2px">
+          <div style="font-size:11px;margin-top:2px;display:flex;gap:12px">
             <span style="color:var(--text-secondary)">Stock: <span style="color:${stockColor};font-weight:600">${p.stock}</span></span>
+            <span style="color:var(--text-secondary)">Markup: <span style="color:${markupColor};font-weight:600">${markup.toFixed(0)}%</span></span>
           </div>
         </div>
       </div>
@@ -561,11 +700,28 @@ function renderItemsPanel(){
       const action = b.dataset.action, idx = Number(b.dataset.idx);
       const prod = state.products[idx];
       if(action === 'dec'){ 
-        prod.price = Math.max(0.1, +(prod.price - 0.5).toFixed(2)); 
+        const oldPrice = prod.price;
+        prod.price = Math.max(0.1, +(prod.price - 0.5).toFixed(2));
+        const markup = (prod.price - prod.cost) / prod.cost;
+        if(markup < 0.3) {
+          log(`💰 ${prod.name}: prezzo ridotto a €${prod.price.toFixed(2)} - Molto attraente per i clienti!`);
+        } else if(markup < 0.8) {
+          log(`💰 ${prod.name}: prezzo ridotto a €${prod.price.toFixed(2)} - Buon equilibrio prezzo/profitto`);
+        } else {
+          log(`💰 ${prod.name}: prezzo ridotto a €${prod.price.toFixed(2)} - Ancora costoso ma più accessibile`);
+        }
         renderItemsPanel(); updateHUD(); saveGame();
       }
       if(action === 'inc'){ 
-        prod.price = +(prod.price + 0.5).toFixed(2); 
+        prod.price = +(prod.price + 0.5).toFixed(2);
+        const markup = (prod.price - prod.cost) / prod.cost;
+        if(markup > 2.0) {
+          log(`💰 ${prod.name}: prezzo aumentato a €${prod.price.toFixed(2)} - Clienti potrebbero evitare il prodotto`);
+        } else if(markup > 1.2) {
+          log(`💰 ${prod.name}: prezzo aumentato a €${prod.price.toFixed(2)} - Profitto alto ma meno clienti`);
+        } else {
+          log(`💰 ${prod.name}: prezzo aumentato a €${prod.price.toFixed(2)} - Equilibrio ragionevole`);
+        }
         renderItemsPanel(); updateHUD(); saveGame();
       }
       if(action === 'restock'){
@@ -616,6 +772,11 @@ function updateHUD(){
   
   document.getElementById('satisfaction-value').textContent = state.satisfaction.toFixed(0);
   document.getElementById('satisfaction-bar').style.width = state.satisfaction + '%';
+  
+  // Aggiorna la nuova barra di attrattività prezzi
+  const priceAttractiveness = getPriceAttractiveness() * 100;
+  document.getElementById('price-attractiveness-value').textContent = priceAttractiveness.toFixed(0);
+  document.getElementById('price-attractiveness-bar').style.width = priceAttractiveness + '%';
   
   // Aggiorna i testi dei bottoni (solo i costi, non gli event listener)
   updateButtonTexts();
