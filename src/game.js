@@ -134,12 +134,20 @@ function initShop(){
 
 function spawnClient(){
   // Il controllo del limite è ora gestito nella funzione update()
-  const edge = Math.floor(Math.random()*4);
-  let x,y;
-  if(edge===0){ x = -10; y = rnd(50, H-50); }
-  if(edge===1){ x = W+10; y = rnd(50, H-50); }
-  if(edge===2){ x = rnd(50, W-50); y = -10; }
-  if(edge===3){ x = rnd(50, W-50); y = H+10; }
+  // I clienti entrano sempre dall'area dell'entrata (in basso a sinistra)
+  let x, y;
+  
+  // Area dell'entrata: zona in basso a sinistra
+  const entranceVariation = Math.random();
+  if(entranceVariation < 0.7) {
+    // 70% entrano dal basso dell'area entrata
+    x = rnd(10, 140);
+    y = H + 10;
+  } else {
+    // 30% entrano dalla sinistra dell'area entrata  
+    x = -10;
+    y = rnd(H - 80, H - 10);
+  }
   const mood = rnd(0.3,1.0);
   // Pazienza più variabile: clienti più impazienti se il negozio è affollato
   const crowdFactor = Math.min(1, state.clients.length / state.clientCap);
@@ -180,23 +188,45 @@ function stepClient(client, dt){
   client.timeAlive += dt;
   if(client.timeAlive > 120){ client.state='leave'; }
   if(client.state === 'leave'){
-    // Trova l'uscita più vicina (bordo più vicino)
-    const distToLeft = client.x;
-    const distToRight = W - client.x;
-    const distToTop = client.y;
-    const distToBottom = H - client.y;
-    
-    const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
     let tx, ty;
     
-    if(minDist === distToLeft) {
-      tx = -30; ty = client.y;
-    } else if(minDist === distToRight) {
-      tx = W + 30; ty = client.y;
-    } else if(minDist === distToTop) {
-      tx = client.x; ty = -30;
+    // 80% dei clienti escono dall'entrata principale
+    if(!client.exitChoice) {
+      client.exitChoice = Math.random() < 0.8 ? 'entrance' : 'emergency';
+    }
+    
+    if(client.exitChoice === 'entrance') {
+      // Esci dall'area entrata (in basso a sinistra)
+      const entranceX = 70; // Centro dell'area entrata
+      const entranceY = H - 40;
+      
+      // Prima vai verso l'entrata, poi esci
+      if(Math.hypot(client.x - entranceX, client.y - entranceY) > 30) {
+        tx = entranceX;
+        ty = entranceY;
+      } else {
+        // Ora esci dall'entrata
+        tx = Math.random() < 0.5 ? -30 : 70;
+        ty = H + 30;
+      }
     } else {
-      tx = client.x; ty = H + 30;
+      // Uscita di emergenza (bordo più vicino)
+      const distToLeft = client.x;
+      const distToRight = W - client.x;
+      const distToTop = client.y;
+      const distToBottom = H - client.y;
+      
+      const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+      
+      if(minDist === distToLeft) {
+        tx = -30; ty = client.y;
+      } else if(minDist === distToRight) {
+        tx = W + 30; ty = client.y;
+      } else if(minDist === distToTop) {
+        tx = client.x; ty = -30;
+      } else {
+        tx = client.x; ty = H + 30;
+      }
     }
     
     moveToward(client, tx, ty, 100, dt);
@@ -383,8 +413,33 @@ function render(){
     ctx.beginPath(); ctx.fillStyle = '#ffd'; ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(c.x-2, c.y+c.r+2, 4, 2);
   }
-  ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0, H-80, 140, 80);
-  ctx.fillStyle = '#eee'; ctx.fillText('Entrata', 8, H-40);
+  // Disegna l'area entrata più visibile
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; 
+  ctx.fillRect(0, H-80, 140, 80);
+  
+  // Bordo dell'entrata
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, H-80, 140, 80);
+  
+  // Testo dell'entrata
+  ctx.fillStyle = '#eee'; 
+  ctx.font = '14px sans-serif';
+  ctx.fillText('🚪 ENTRATA', 8, H-50);
+  
+  // Freccia che indica la direzione
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('↗️', 8, H-20);
+  
+  // Uscite di emergenza (piccole e discrete)
+  ctx.fillStyle = 'rgba(255,0,0,0.1)';
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#faa';
+  // Uscita destra
+  ctx.fillText('EXIT', W-35, H/2);
+  // Uscita sopra
+  ctx.fillText('EXIT', W/2-15, 15);
   ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(8,8,220,48);
   ctx.fillStyle = '#fff'; ctx.font = '14px sans-serif'; ctx.fillText('€' + state.money.toFixed(2), 16, 30);
   ctx.font = '12px sans-serif'; ctx.fillStyle = '#ccc'; ctx.fillText('Clienti: ' + state.clients.length, 120, 30);
