@@ -21,6 +21,7 @@ const state = {
   shelves: [],
   products: [],
   logLines: [],
+  autosaveInterval: 10, // seconds
 };
 
 // Util
@@ -195,6 +196,47 @@ function updateHUD(){
   document.getElementById('spawn-interval').textContent = (state.spawnInterval * (state.marketingBoost?0.6:1)).toFixed(2);
 }
 
+// --- Save / Load (localStorage) ---
+function getSaveKey(){ return 'shop-tycoon-save-v1'; }
+function saveGame(){
+  // Minimal snapshot: money, products, clientCap, time
+  const data = {
+    money: state.money,
+    time: state.time,
+    products: state.products,
+    clientCap: state.clientCap,
+    shelves: state.shelves
+  };
+  try{
+    localStorage.setItem(getSaveKey(), JSON.stringify(data));
+    log('Gioco salvato');
+  }catch(e){ log('Errore salvataggio', e.message); }
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(getSaveKey());
+    if(!raw){ log('Nessun salvataggio trovato'); return; }
+    const data = JSON.parse(raw);
+    state.money = data.money ?? state.money;
+    state.time = data.time ?? state.time;
+    state.products = data.products ?? state.products;
+    state.clientCap = data.clientCap ?? state.clientCap;
+    state.shelves = data.shelves ?? state.shelves;
+    renderItemsPanel(); updateHUD();
+    log('Salvataggio caricato');
+  }catch(e){ log('Errore caricamento', e.message); }
+}
+function resetGame(){
+  if(confirm('Sei sicuro di voler resettare il gioco?')){
+    localStorage.removeItem(getSaveKey());
+    // reload page to re-init state
+    location.reload();
+  }
+}
+
+// Autosave timer
+let autosaveCounter = 0;
+
 document.getElementById('marketing').onclick = ()=>{
   const cost = 50;
   if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
@@ -223,3 +265,20 @@ document.getElementById('expand').onclick = ()=>{
 
 initShop();
 requestAnimationFrame(frame);
+
+// Bind save/load/reset buttons
+document.getElementById('save-game').addEventListener('click', saveGame);
+document.getElementById('load-game').addEventListener('click', loadGame);
+document.getElementById('reset-game').addEventListener('click', resetGame);
+
+// integrate autosave into main loop via small hook
+const originalUpdate = update;
+function update(dt){
+  originalUpdate(dt);
+  autosaveCounter += dt;
+  if(autosaveCounter >= state.autosaveInterval){
+    autosaveCounter = 0;
+    try{ saveGame(); }catch(e){ /* ignore */ }
+  }
+}
+

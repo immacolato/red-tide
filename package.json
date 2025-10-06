@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "description": "Prototipo leggero di gioco gestionale - Shop Tycoon",
   "scripts": {
-    "start": "npx serve ./ -p 5000"
+    "start": "npx serve ./ -p 5000",
+    "deploy": "npx gh-pages -d ."
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
 }
