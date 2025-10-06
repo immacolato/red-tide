@@ -179,7 +179,6 @@ function initShop(){
   
   renderItemsPanel();
   updateHUD();
-  updateButtonTexts();
 }
 
 function spawnClient(){
@@ -354,9 +353,10 @@ let lastSaveTime = 0;
 function update(dt){
   state.time += dt;
   
-  // Decay del marketing: perde 2% al secondo
+  // Decay del marketing: perde 0.5% al secondo (più lento)
   if(state.marketingPower > 0) {
-    state.marketingPower = Math.max(0, state.marketingPower - 2 * dt);
+    const decayRate = 0.5; // 0.5% al secondo = 200 secondi per azzerarsi completamente
+    state.marketingPower = Math.max(0, state.marketingPower - decayRate * dt);
   }
   
   // Sistema di spawn sofisticato
@@ -553,13 +553,17 @@ function renderItemsPanel(){
 function updateButtonTexts() {
   // Aggiorna il costo dinamico del rifornimento
   const restockCost = state.products.reduce((s,p)=>s + p.cost*3,0);
-  document.getElementById('restock-all').textContent = 'Rifornisci tutto (€' + restockCost.toFixed(0) + ')';
+  const restockBtn = document.getElementById('restock-all');
+  if(restockBtn) {
+    restockBtn.textContent = 'Rifornisci tutto (€' + restockCost.toFixed(0) + ')';
+  }
   
-  // Aggiorna il marketing con info sul livello
-  const marketingText = state.marketingBoost > 0 ? 
-    'Marketing (€50) - Livello ' + state.marketingBoost :
-    'Marketing (€50) - +spawn';
-  document.getElementById('marketing').textContent = marketingText;
+  // Costo marketing crescente: 50 + (potenza attuale / 4)
+  const marketingCost = 50 + Math.floor(state.marketingPower / 4);
+  const marketingBtn = document.getElementById('marketing');
+  if(marketingBtn) {
+    marketingBtn.textContent = 'Marketing (€' + marketingCost + ') - +25%';
+  }
 }
 
 function updateHUD(){
@@ -605,34 +609,41 @@ function handleResize() {
   H = newSize.height;
 }
 
+let eventListenersSetup = false;
+
 function setupEventListeners() {
+  if(eventListenersSetup) return; // Evita duplicazioni
+  eventListenersSetup = true;
+  
   // Event listener per il ridimensionamento
   window.addEventListener('resize', handleResize);
   // Bottoni principali
   document.getElementById('marketing').onclick = ()=>{
-    const cost = 50;
-    if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
+    console.log('Marketing button clicked');
+    // Costo crescente basato sulla potenza attuale
+    const cost = 50 + Math.floor(state.marketingPower / 4);
+    if(state.money < cost){ log('Soldi insufficienti per marketing (€' + cost + ')'); return; }
     state.money -= cost;
     
-    // Nuovo sistema: marketing aggiunge potenza che decade nel tempo
+    // Marketing aggiunge potenza che decade nel tempo
     const boostAmount = 25; // +25% di potenza marketing
     state.marketingPower = Math.min(100, state.marketingPower + boostAmount);
     state.maxMarketingPower = Math.max(state.maxMarketingPower, state.marketingPower);
     
-    log('Campagna marketing attivata (+' + boostAmount + '% potenza)');
+    log('Campagna marketing attivata (+' + boostAmount + '% potenza) - Costo: €' + cost);
     log('Potenza marketing: ' + state.marketingPower.toFixed(1) + '%');
     updateHUD();
     saveGame();
   };
   
   document.getElementById('restock-all').onclick = ()=>{
+    console.log('Restock-all button clicked');
     const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
     if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto'); return; }
     state.money -= cost;
     state.products.forEach(p=> p.stock += 3);
     renderItemsPanel(); updateHUD(); 
     log('Rifornimento completo - Costo: €' + cost.toFixed(2));
-    updateButtonTexts(); // Aggiorna i testi dei bottoni
     saveGame();
   };
   
@@ -653,11 +664,13 @@ function setupEventListeners() {
 
   // Bottoni di salvataggio
   document.getElementById('save-game').onclick = ()=>{
+    console.log('Save button clicked');
     saveGame();
     log('Gioco salvato manualmente!');
   };
 
   document.getElementById('reset-game').onclick = ()=>{
+    console.log('Reset button clicked');
     if(confirm('Sei sicuro di voler resettare tutto il progresso? Questa azione non può essere annullata.')) {
       resetGame();
     }
