@@ -112,7 +112,7 @@ function initShop(){
 }
 
 function spawnClient(){
-  if(state.clients.length >= state.clientCap) return;
+  // Il controllo del limite è ora gestito nella funzione update()
   const edge = Math.floor(Math.random()*4);
   let x,y;
   if(edge===0){ x = -10; y = rnd(50, H-50); }
@@ -122,7 +122,24 @@ function spawnClient(){
   const mood = rnd(0.3,1.0);
   const patience = rnd(6,18);
   const productIndex = Math.floor(rnd(0, state.products.length));
-  state.clients.push({ x,y, vx:0,vy:0, r:4 + Math.random()*3, targetShelf: state.shelves.find(s=>s.productIndex===productIndex), patience, mood, productIndex, timeAlive:0, state:'toShelf' });
+  const targetShelf = state.shelves.find(s=>s.productIndex===productIndex);
+  
+  // Se non trova uno scaffale per il prodotto, sceglie un prodotto casuale
+  if(!targetShelf && state.shelves.length > 0) {
+    const randomShelfIndex = Math.floor(Math.random() * state.shelves.length);
+    const randomShelf = state.shelves[randomShelfIndex];
+    targetShelf = randomShelf;
+    productIndex = randomShelf.productIndex;
+  }
+  
+  state.clients.push({ 
+    x, y, vx:0, vy:0, 
+    r: 4 + Math.random()*3, 
+    targetShelf, 
+    patience, mood, productIndex, 
+    timeAlive:0, 
+    state:'toShelf' 
+  });
 }
 
 function moveToward(entity, tx, ty, speed, dt){
@@ -192,8 +209,20 @@ function update(dt){
   state.spawnTimer += dt;
   if(state.spawnTimer >= effectiveSpawnInterval){
     state.spawnTimer = 0;
-    if(Math.random() < 0.9) spawnClient();
-    if(Math.random() < 0.25) spawnClient();
+    // Continua a generare clienti fintanto che c'è spazio
+    if(state.clients.length < state.clientCap) {
+      if(Math.random() < 0.9) spawnClient();
+      // Possibilità di un secondo cliente se c'è ancora spazio
+      if(state.clients.length < state.clientCap && Math.random() < 0.25) spawnClient();
+    }
+  }
+  
+  // Flusso garantito: se il negozio è molto vuoto, forza l'arrivo di clienti
+  if(state.clients.length < Math.max(2, state.clientCap * 0.1) && Math.random() < 0.02) {
+    if(state.clients.length < state.clientCap) {
+      spawnClient();
+      log('Cliente attirato dal negozio vuoto');
+    }
   }
   if(state.marketingBoost > 0){
     state.marketingTimer -= dt;
@@ -204,7 +233,8 @@ function update(dt){
     const res = stepClient(c, dt);
     if(res === 'remove') state.clients.splice(i,1);
   }
-  if(state.clients.length > state.clientCap) state.clients.splice(state.clientCap);
+  // Rimuovo il limite rigido che tagliava i clienti
+  // if(state.clients.length > state.clientCap) state.clients.splice(state.clientCap);
   
   // Salvataggio automatico ogni 10 secondi
   if(state.time - lastSaveTime > 10) {
