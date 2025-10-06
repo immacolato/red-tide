@@ -115,10 +115,10 @@ function initShop(){
   if(!loaded) {
     // Se non c'è salvataggio, inizializza con valori di default
     state.shelves = [
-      {x: 300, y: 200, w:80, h:24, productIndex:0},
-      {x: 460, y: 200, w:80, h:24, productIndex:1},
-      {x: 620, y: 200, w:80, h:24, productIndex:2},
-      {x: 380, y: 360, w:120, h:24, productIndex:3},
+      {x: 280, y: 180, w:120, h:40, productIndex:0},
+      {x: 420, y: 180, w:120, h:40, productIndex:1},
+      {x: 560, y: 180, w:120, h:40, productIndex:2},
+      {x: 350, y: 340, w:140, h:40, productIndex:3},
     ];
     state.products = [
       {name:'Snack', price:4, cost:1.5, stock:10},
@@ -274,10 +274,37 @@ function render(){
   ctx.textBaseline = 'top';
   ctx.imageSmoothingEnabled = false;
   for(const s of state.shelves){
-    ctx.fillStyle = '#7a4'; ctx.fillRect(s.x, s.y, s.w, s.h);
+    // Disegna lo scaffale
+    ctx.fillStyle = '#7a4'; 
+    ctx.fillRect(s.x, s.y, s.w, s.h);
+    
+    // Disegna il bordo dello scaffale
+    ctx.strokeStyle = '#5a2';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(s.x, s.y, s.w, s.h);
+    
+    // Disegna il testo del prodotto
     const prod = state.products[s.productIndex];
-    ctx.fillStyle = '#050'; ctx.font = '12px sans-serif';
-    ctx.fillText(prod.name + ' x' + prod.stock, s.x+6, s.y+16);
+    if(prod) {
+      ctx.fillStyle = '#050'; 
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Testo centrato nello scaffale
+      const centerX = s.x + s.w/2;
+      const centerY = s.y + s.h/2 - 4;
+      ctx.fillText(prod.name, centerX, centerY);
+      
+      // Stock sotto il nome
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = prod.stock > 0 ? '#030' : '#800';
+      ctx.fillText('Stock: ' + prod.stock, centerX, centerY + 14);
+      
+      // Reset text align per altri testi
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+    }
   }
   for(const c of state.clients){
     ctx.beginPath(); ctx.fillStyle = '#ffd'; ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
@@ -373,9 +400,13 @@ function setupEventListeners() {
     if(state.money < cost){ log('Non hai abbastanza soldi per espandere'); return; }
     state.money -= cost;
     state.clientCap += 10;
-    const nx = 200 + Math.random()*520, ny = 120 + Math.random()*360;
-    state.shelves.push({x:nx,y:ny,w:80,h:24,productIndex: (state.products.length-1) });
-    log('Negozio espanso: +10 capienza'); renderItemsPanel(); updateHUD();
+    // Posiziona il nuovo scaffale in modo più intelligente
+    const nx = 200 + Math.random() * (W - 340); // Lascia margini
+    const ny = 120 + Math.random() * (H - 200); // Lascia margini
+    const productIndex = Math.floor(Math.random() * state.products.length);
+    state.shelves.push({x:nx, y:ny, w:120, h:40, productIndex});
+    log('Negozio espanso: +10 capienza, nuovo scaffale aggiunto'); 
+    renderItemsPanel(); updateHUD();
     saveGame();
   };
 
