@@ -42,6 +42,11 @@ const state = {
   shelves: [],
   products: [],
   logLines: [],
+  // Nuovo sistema di soddisfazione
+  satisfaction: 50, // 0-100, inizia neutrale
+  satisfactionHistory: [], // Ultimi eventi per calcolare trend
+  marketingPower: 0, // 0-100, potenza marketing attuale
+  maxMarketingPower: 0, // Massimo raggiunto (per la barra)
 };
 
 // Util
@@ -64,9 +69,10 @@ function saveGame(){
     clientCap: state.clientCap,
     products: state.products,
     shelves: state.shelves,
-    marketingBoost: state.marketingBoost,
-    marketingTimer: state.marketingTimer,
-    version: 1
+    satisfaction: state.satisfaction,
+    marketingPower: state.marketingPower,
+    maxMarketingPower: state.maxMarketingPower,
+    version: 2
   };
   localStorage.setItem('shopTycoonSave', JSON.stringify(saveData));
   log('Gioco salvato automaticamente');
@@ -78,14 +84,24 @@ function loadGame(){
     if(!saveStr) return false;
     
     const saveData = JSON.parse(saveStr);
-    if(saveData.version !== 1) return false;
+    if(saveData.version < 1) return false;
     
     state.money = saveData.money || 150;
     state.time = saveData.time || 0;
     state.spawnInterval = saveData.spawnInterval || 2.0;
     state.clientCap = saveData.clientCap || 50;
-    state.marketingBoost = saveData.marketingBoost || 0;
-    state.marketingTimer = saveData.marketingTimer || 0;
+    
+    // Nuovo sistema (version 2+)
+    if(saveData.version >= 2) {
+      state.satisfaction = saveData.satisfaction || 50;
+      state.marketingPower = saveData.marketingPower || 0;
+      state.maxMarketingPower = saveData.maxMarketingPower || 0;
+    } else {
+      // Migrazione da versione vecchia
+      state.satisfaction = 50;
+      state.marketingPower = 0;
+      state.maxMarketingPower = 0;
+    }
     
     if(saveData.products && saveData.products.length > 0) {
       state.products = saveData.products;
@@ -95,7 +111,7 @@ function loadGame(){
       state.shelves = saveData.shelves;
     }
     
-    log('Gioco caricato dal salvataggio');
+    log('Gioco caricato dal salvataggio (v' + saveData.version + ')');
     return true;
   } catch(e) {
     console.error('Errore nel caricamento:', e);
@@ -106,6 +122,39 @@ function loadGame(){
 function resetGame(){
   localStorage.removeItem('shopTycoonSave');
   location.reload();
+}
+
+// Sistema di soddisfazione
+function addSatisfactionEvent(change, reason) {
+  state.satisfactionHistory.push({
+    change: change,
+    reason: reason,
+    time: state.time
+  });
+  
+  // Mantieni solo gli ultimi 50 eventi
+  if(state.satisfactionHistory.length > 50) {
+    state.satisfactionHistory.shift();
+  }
+  
+  // Aggiorna soddisfazione
+  state.satisfaction = Math.max(0, Math.min(100, state.satisfaction + change));
+  
+  if(Math.abs(change) >= 2) {
+    log('Soddisfazione: ' + (change > 0 ? '+' : '') + change + ' (' + reason + ')');
+  }
+}
+
+// Calcola il moltiplicatore di spawn basato su marketing e soddisfazione
+function getSpawnMultiplier() {
+  // Componente marketing (0.5x - 2x)
+  const marketingFactor = 0.5 + (state.marketingPower / 100) * 1.5;
+  
+  // Componente soddisfazione (0.3x - 1.5x)
+  const satisfactionFactor = 0.3 + (state.satisfaction / 100) * 1.2;
+  
+  // Combinazione
+  return marketingFactor * satisfactionFactor;
 }
 
 function initShop(){
@@ -264,6 +313,10 @@ function stepClient(client, dt){
         const profit = product.price - product.cost;
         state.money += profit;
         log('Venduto', product.name, 'Prezzo', product.price.toFixed(2),'Profitto', profit.toFixed(2));
+        
+        // Cliente soddisfatto: aumenta soddisfazione
+        addSatisfactionEvent(1, 'Vendita completata');
+        
         renderItemsPanel();
         updateHUD();
         // Salva ogni 5 vendite per non salvare troppo spesso
@@ -271,13 +324,19 @@ function stepClient(client, dt){
       } else {
         if(product.stock <= 0) {
           log('Cliente deluso: ' + product.name + ' esaurito!');
+          addSatisfactionEvent(-2, 'Prodotto esaurito');
         } else {
           log('Cliente non ha comprato', product.name, '- prezzo troppo alto');
+          addSatisfactionEvent(-1, 'Prezzo troppo alto');
         }
       }
       client.state = 'leave';
     }
-    if(client.patience <= 0){ client.state = 'leave'; log('Cliente se ne va insoddisfatto (pazienza finita)'); }
+    if(client.patience <= 0){ 
+      client.state = 'leave'; 
+      log('Cliente se ne va insoddisfatto (pazienza finita)'); 
+      addSatisfactionEvent(-3, 'Cliente impaziente');
+    }
   }
 }
 
@@ -294,17 +353,27 @@ let lastSaveTime = 0;
 
 function update(dt){
   state.time += dt;
-  // Marketing cumulativo: ogni livello riduce il tempo di spawn del 20%
-  const marketingFactor = state.marketingBoost > 0 ? Math.pow(0.8, state.marketingBoost) : 1;
-  const effectiveSpawnInterval = Math.max(0.25, state.spawnInterval * marketingFactor);
+  
+  // Decay del marketing: perde 2% al secondo
+  if(state.marketingPower > 0) {
+    state.marketingPower = Math.max(0, state.marketingPower - 2 * dt);
+  }
+  
+  // Sistema di spawn sofisticato
+  const spawnMultiplier = getSpawnMultiplier();
+  const effectiveSpawnInterval = Math.max(0.3, state.spawnInterval / spawnMultiplier);
+  
   state.spawnTimer += dt;
   if(state.spawnTimer >= effectiveSpawnInterval){
     state.spawnTimer = 0;
     // Continua a generare clienti fintanto che c'è spazio
     if(state.clients.length < state.clientCap) {
-      if(Math.random() < 0.9) spawnClient();
-      // Possibilità di un secondo cliente se c'è ancora spazio
-      if(state.clients.length < state.clientCap && Math.random() < 0.25) spawnClient();
+      const baseChance = 0.7 + (state.satisfaction / 200); // 0.7 - 1.2
+      if(Math.random() < baseChance) spawnClient();
+      // Possibilità di un secondo cliente se soddisfazione alta
+      if(state.clients.length < state.clientCap && state.satisfaction > 70 && Math.random() < 0.3) {
+        spawnClient();
+      }
     }
   }
   
@@ -334,10 +403,7 @@ function update(dt){
       log('ATTENZIONE: Prodotti esauriti e soldi insufficienti per rifornire!');
     }
   }
-  if(state.marketingBoost > 0){
-    state.marketingTimer -= dt;
-    if(state.marketingTimer <= 0){ state.marketingBoost = 0; log('Campagna marketing terminata'); updateHUD(); }
-  }
+  // La logica di marketing decay è ora gestita sopra
   for(let i = state.clients.length-1; i>=0; i--){
     const c = state.clients[i];
     const res = stepClient(c, dt);
@@ -502,10 +568,17 @@ function updateHUD(){
   document.getElementById('client-count').textContent = state.clients.length;
   document.getElementById('client-cap').textContent = state.clientCap;
   
-  // Mostra il spawn interval aggiornato con il marketing cumulativo
-  const marketingFactor = state.marketingBoost > 0 ? Math.pow(0.8, state.marketingBoost) : 1;
-  const currentSpawnInterval = state.spawnInterval * marketingFactor;
+  // Mostra il spawn interval con il nuovo sistema
+  const spawnMultiplier = getSpawnMultiplier();
+  const currentSpawnInterval = state.spawnInterval / spawnMultiplier;
   document.getElementById('spawn-interval').textContent = currentSpawnInterval.toFixed(2);
+  
+  // Aggiorna le barre di progresso
+  document.getElementById('marketing-value').textContent = state.marketingPower.toFixed(0);
+  document.getElementById('marketing-bar').style.width = state.marketingPower + '%';
+  
+  document.getElementById('satisfaction-value').textContent = state.satisfaction.toFixed(0);
+  document.getElementById('satisfaction-bar').style.width = state.satisfaction + '%';
   
   // Aggiorna i testi dei bottoni
   updateButtonTexts();
@@ -541,13 +614,13 @@ function setupEventListeners() {
     if(state.money < cost){ log('Soldi insufficienti per marketing'); return; }
     state.money -= cost;
     
-    // Il marketing si cumula: ogni campagna aumenta l'effetto
-    state.marketingBoost = Math.min(5, state.marketingBoost + 1); // Massimo 5x
-    state.marketingTimer = Math.max(state.marketingTimer, 0) + 20; // Estende la durata
+    // Nuovo sistema: marketing aggiunge potenza che decade nel tempo
+    const boostAmount = 25; // +25% di potenza marketing
+    state.marketingPower = Math.min(100, state.marketingPower + boostAmount);
+    state.maxMarketingPower = Math.max(state.maxMarketingPower, state.marketingPower);
     
-    const effectiveness = 1 - (0.2 * state.marketingBoost); // Ogni boost riduce il tempo del 20%
-    log('Campagna marketing attivata (livello ' + state.marketingBoost + ')');
-    log('Spawn rate migliorato per ' + Math.ceil(state.marketingTimer) + 's');
+    log('Campagna marketing attivata (+' + boostAmount + '% potenza)');
+    log('Potenza marketing: ' + state.marketingPower.toFixed(1) + '%');
     updateHUD();
     saveGame();
   };
