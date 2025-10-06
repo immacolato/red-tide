@@ -15,5 +15,9 @@ jobs:
           node-version: '18'
       - name: Install deps
         run: npm install --prefer-offline --no-audit --no-fund
+      - name: Configure git user for gh-pages
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
       - name: Build & Deploy
         run: npm run deploy
