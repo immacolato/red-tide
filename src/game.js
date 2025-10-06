@@ -34,19 +34,79 @@ function log(...args){
   document.getElementById('log').textContent = state.logLines.slice(0,100).join('\n');
 }
 
+// Sistema di salvataggio
+function saveGame(){
+  const saveData = {
+    money: state.money,
+    time: state.time,
+    spawnInterval: state.spawnInterval,
+    clientCap: state.clientCap,
+    products: state.products,
+    shelves: state.shelves,
+    marketingBoost: state.marketingBoost,
+    marketingTimer: state.marketingTimer,
+    version: 1
+  };
+  localStorage.setItem('shopTycoonSave', JSON.stringify(saveData));
+  log('Gioco salvato automaticamente');
+}
+
+function loadGame(){
+  try {
+    const saveStr = localStorage.getItem('shopTycoonSave');
+    if(!saveStr) return false;
+    
+    const saveData = JSON.parse(saveStr);
+    if(saveData.version !== 1) return false;
+    
+    state.money = saveData.money || 150;
+    state.time = saveData.time || 0;
+    state.spawnInterval = saveData.spawnInterval || 2.0;
+    state.clientCap = saveData.clientCap || 50;
+    state.marketingBoost = saveData.marketingBoost || 0;
+    state.marketingTimer = saveData.marketingTimer || 0;
+    
+    if(saveData.products && saveData.products.length > 0) {
+      state.products = saveData.products;
+    }
+    
+    if(saveData.shelves && saveData.shelves.length > 0) {
+      state.shelves = saveData.shelves;
+    }
+    
+    log('Gioco caricato dal salvataggio');
+    return true;
+  } catch(e) {
+    console.error('Errore nel caricamento:', e);
+    return false;
+  }
+}
+
+function resetGame(){
+  localStorage.removeItem('shopTycoonSave');
+  location.reload();
+}
+
 function initShop(){
-  state.shelves = [
-    {x: 300, y: 200, w:80, h:24, productIndex:0},
-    {x: 460, y: 200, w:80, h:24, productIndex:1},
-    {x: 620, y: 200, w:80, h:24, productIndex:2},
-    {x: 380, y: 360, w:120, h:24, productIndex:3},
-  ];
-  state.products = [
-    {name:'Snack', price:4, cost:1.5, stock:10},
-    {name:'Bevanda', price:3, cost:0.8, stock:10},
-    {name:'Gadget', price:8, cost:4, stock:6},
-    {name:'Libretto', price:6, cost:2.5, stock:8},
-  ];
+  // Prova a caricare il salvataggio
+  const loaded = loadGame();
+  
+  if(!loaded) {
+    // Se non c'è salvataggio, inizializza con valori di default
+    state.shelves = [
+      {x: 300, y: 200, w:80, h:24, productIndex:0},
+      {x: 460, y: 200, w:80, h:24, productIndex:1},
+      {x: 620, y: 200, w:80, h:24, productIndex:2},
+      {x: 380, y: 360, w:120, h:24, productIndex:3},
+    ];
+    state.products = [
+      {name:'Snack', price:4, cost:1.5, stock:10},
+      {name:'Bevanda', price:3, cost:0.8, stock:10},
+      {name:'Gadget', price:8, cost:4, stock:6},
+      {name:'Libretto', price:6, cost:2.5, stock:8},
+    ];
+  }
+  
   renderItemsPanel();
   updateHUD();
 }
@@ -104,6 +164,8 @@ function stepClient(client, dt){
         log('Venduto', product.name, 'Prezzo', product.price.toFixed(2),'Profitto', profit.toFixed(2));
         renderItemsPanel();
         updateHUD();
+        // Salva ogni 5 vendite per non salvare troppo spesso
+        if(Math.random() < 0.2) saveGame();
       } else {
         log('Cliente non ha comprato', product.name);
       }
@@ -121,6 +183,8 @@ function frame(t){
   render();
   requestAnimationFrame(frame);
 }
+
+let lastSaveTime = 0;
 
 function update(dt){
   state.time += dt;
@@ -141,6 +205,13 @@ function update(dt){
     if(res === 'remove') state.clients.splice(i,1);
   }
   if(state.clients.length > state.clientCap) state.clients.splice(state.clientCap);
+  
+  // Salvataggio automatico ogni 10 secondi
+  if(state.time - lastSaveTime > 10) {
+    saveGame();
+    lastSaveTime = state.time;
+  }
+  
   updateHUD();
 }
 
@@ -177,11 +248,24 @@ function renderItemsPanel(){
     b.onclick = (e)=>{
       const action = b.dataset.action, idx = Number(b.dataset.idx);
       const prod = state.products[idx];
-      if(action === 'dec'){ prod.price = Math.max(0.1, +(prod.price - 0.5).toFixed(2)); renderItemsPanel(); updateHUD(); }
-      if(action === 'inc'){ prod.price = +(prod.price + 0.5).toFixed(2); renderItemsPanel(); updateHUD(); }
+      if(action === 'dec'){ 
+        prod.price = Math.max(0.1, +(prod.price - 0.5).toFixed(2)); 
+        renderItemsPanel(); updateHUD(); saveGame();
+      }
+      if(action === 'inc'){ 
+        prod.price = +(prod.price + 0.5).toFixed(2); 
+        renderItemsPanel(); updateHUD(); saveGame();
+      }
       if(action === 'restock'){
         const cost = prod.cost * 5;
-        if(state.money >= cost){ state.money -= cost; prod.stock += 5; renderItemsPanel(); updateHUD(); log('Rifornito', prod.name, 'Costo', cost.toFixed(2)); } else { log('Non hai abbastanza soldi per rifornire', prod.name); }
+        if(state.money >= cost){ 
+          state.money -= cost; prod.stock += 5; 
+          renderItemsPanel(); updateHUD(); 
+          log('Rifornito', prod.name, 'Costo', cost.toFixed(2)); 
+          saveGame();
+        } else { 
+          log('Non hai abbastanza soldi per rifornire', prod.name); 
+        }
       }
     };
   });
@@ -203,6 +287,7 @@ document.getElementById('marketing').onclick = ()=>{
   state.marketingTimer = 20;
   log('Campagna marketing attivata: +clienti per 20s');
   updateHUD();
+  saveGame();
 };
 document.getElementById('restock-all').onclick = ()=>{
   const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
@@ -210,6 +295,7 @@ document.getElementById('restock-all').onclick = ()=>{
   state.money -= cost;
   state.products.forEach(p=> p.stock += 3);
   renderItemsPanel(); updateHUD(); log('Rifornimento completo');
+  saveGame();
 };
 document.getElementById('expand').onclick = ()=>{
   const cost = 200;
@@ -219,6 +305,19 @@ document.getElementById('expand').onclick = ()=>{
   const nx = 200 + Math.random()*520, ny = 120 + Math.random()*360;
   state.shelves.push({x:nx,y:ny,w:80,h:24,productIndex: (state.products.length-1) });
   log('Negozio espanso: +10 capienza'); renderItemsPanel(); updateHUD();
+  saveGame();
+};
+
+// Nuovi bottoni per salvataggio
+document.getElementById('save-game').onclick = ()=>{
+  saveGame();
+  log('Gioco salvato manualmente!');
+};
+
+document.getElementById('reset-game').onclick = ()=>{
+  if(confirm('Sei sicuro di voler resettare tutto il progresso? Questa azione non può essere annullata.')) {
+    resetGame();
+  }
 };
 
 initShop();
