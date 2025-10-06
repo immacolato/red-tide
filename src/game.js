@@ -520,7 +520,40 @@ function renderItemsPanel(){
   state.products.forEach((p, idx)=>{
     const div = document.createElement('div');
     div.className = 'item';
-    div.innerHTML = `\n      <div style="min-width:140px">\n        <div style="font-weight:600">${p.name}</div>\n        <div style="font-size:12px;color:${p.price < p.cost ? '#f66' : '#aaa'}">Prezzo: €${p.price.toFixed(2)} | Costo: €${p.cost.toFixed(2)} | Stock: ${p.stock}</div>\n      </div>\n      <div class="controls">\n        <button class="small" data-action="dec" data-idx="${idx}">-</button>\n        <button class="small" data-action="inc" data-idx="${idx}">+</button>\n        <button class="small" data-action="restock" data-idx="${idx}">Rifornisci</button>\n      </div>\n    `;
+    
+    // Icone per i prodotti
+    const icons = ['🍿', '🥤', '🎮', '📚'];
+    const icon = icons[idx] || '📦';
+    
+    // Colore stock
+    const stockColor = p.stock === 0 ? 'var(--accent-danger)' : 
+                      p.stock < 5 ? 'var(--accent-warning)' : 
+                      'var(--accent-success)';
+    
+    // Profitto per unità
+    const profit = p.price - p.cost;
+    const profitColor = profit > 0 ? 'var(--accent-success)' : 'var(--accent-danger)';
+    
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div style="font-size:20px">${icon}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--text-primary);margin-bottom:4px">${p.name}</div>
+          <div style="display:flex;gap:12px;font-size:11px">
+            <span style="color:var(--text-secondary)">Prezzo: <span style="color:var(--accent-primary)">€${p.price.toFixed(2)}</span></span>
+            <span style="color:var(--text-secondary)">Profitto: <span style="color:${profitColor}">€${profit.toFixed(2)}</span></span>
+          </div>
+          <div style="font-size:11px;margin-top:2px">
+            <span style="color:var(--text-secondary)">Stock: <span style="color:${stockColor};font-weight:600">${p.stock}</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button data-action="dec" data-idx="${idx}" title="Diminuisci prezzo">-</button>
+        <button data-action="inc" data-idx="${idx}" title="Aumenta prezzo">+</button>
+        <button data-action="restock" data-idx="${idx}" title="Rifornisci (+5)">📦</button>
+      </div>
+    `;
     container.appendChild(div);
   });
   container.querySelectorAll('button').forEach(b=>{
