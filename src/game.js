@@ -141,7 +141,10 @@ function spawnClient(){
   if(edge===2){ x = rnd(50, W-50); y = -10; }
   if(edge===3){ x = rnd(50, W-50); y = H+10; }
   const mood = rnd(0.3,1.0);
-  const patience = rnd(6,18);
+  // Pazienza più variabile: clienti più impazienti se il negozio è affollato
+  const crowdFactor = Math.min(1, state.clients.length / state.clientCap);
+  const basePlatience = rnd(8,15) * (1 - crowdFactor * 0.3);
+  const patience = Math.max(3, basePlatience);
   const productIndex = Math.floor(rnd(0, state.products.length));
   const targetShelf = state.shelves.find(s=>s.productIndex===productIndex);
   
@@ -190,7 +193,12 @@ function stepClient(client, dt){
     const ty = s.y + s.h/2 + rnd(-6,6);
     moveToward(client, tx, ty, 70 + 30*client.mood, dt);
     const dist = Math.hypot(client.x - tx, client.y - ty);
-    client.patience -= dt * 0.6;
+    
+    // Perde pazienza più velocemente se il prodotto è esaurito
+    const product = state.products[s.productIndex];
+    const patienceLoss = (product && product.stock <= 0) ? dt * 1.5 : dt * 0.6;
+    client.patience -= patienceLoss;
+    
     if(dist < 10){
       const product = state.products[s.productIndex];
       const willingness = rnd(0,1.5) * (1 + client.mood);
@@ -205,7 +213,11 @@ function stepClient(client, dt){
         // Salva ogni 5 vendite per non salvare troppo spesso
         if(Math.random() < 0.2) saveGame();
       } else {
-        log('Cliente non ha comprato', product.name);
+        if(product.stock <= 0) {
+          log('Cliente deluso: ' + product.name + ' esaurito!');
+        } else {
+          log('Cliente non ha comprato', product.name, '- prezzo troppo alto');
+        }
       }
       client.state = 'leave';
     }
@@ -243,6 +255,25 @@ function update(dt){
     if(state.clients.length < state.clientCap) {
       spawnClient();
       log('Cliente attirato dal negozio vuoto');
+    }
+  }
+  
+  // Sistema di emergenza: rifornimento automatico se tutti i prodotti sono esauriti
+  const totalStock = state.products.reduce((sum, p) => sum + p.stock, 0);
+  if(totalStock === 0 && state.clients.length > state.clientCap * 0.8) {
+    if(state.money >= 20) {
+      // Rifornimento minimo d'emergenza
+      state.products.forEach(p => {
+        if(state.money >= p.cost * 2) {
+          state.money -= p.cost * 2;
+          p.stock += 2;
+        }
+      });
+      log('RIFORNIMENTO D\'EMERGENZA: prodotti esauriti!');
+      renderItemsPanel();
+      updateHUD();
+    } else {
+      log('ATTENZIONE: Prodotti esauriti e soldi insufficienti per rifornire!');
     }
   }
   if(state.marketingBoost > 0){
