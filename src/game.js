@@ -551,18 +551,18 @@ function renderItemsPanel(){
 }
 
 function updateButtonTexts() {
-  // Aggiorna il costo dinamico del rifornimento
+  // Aggiorna solo gli span interni per non disturbare gli event listener
   const restockCost = state.products.reduce((s,p)=>s + p.cost*3,0);
-  const restockBtn = document.getElementById('restock-all');
-  if(restockBtn) {
-    restockBtn.textContent = 'Rifornisci tutto (€' + restockCost.toFixed(0) + ')';
+  const restockCostSpan = document.getElementById('restock-cost');
+  if(restockCostSpan) {
+    restockCostSpan.textContent = '€' + restockCost.toFixed(0);
   }
   
   // Costo marketing crescente: 50 + (potenza attuale / 4)
   const marketingCost = 50 + Math.floor(state.marketingPower / 4);
-  const marketingBtn = document.getElementById('marketing');
-  if(marketingBtn) {
-    marketingBtn.textContent = 'Marketing (€' + marketingCost + ') - +25%';
+  const marketingCostSpan = document.getElementById('marketing-cost');
+  if(marketingCostSpan) {
+    marketingCostSpan.textContent = '€' + marketingCost;
   }
 }
 
@@ -584,7 +584,7 @@ function updateHUD(){
   document.getElementById('satisfaction-value').textContent = state.satisfaction.toFixed(0);
   document.getElementById('satisfaction-bar').style.width = state.satisfaction + '%';
   
-  // Aggiorna i testi dei bottoni
+  // Aggiorna i testi dei bottoni (solo i costi, non gli event listener)
   updateButtonTexts();
   
   // Debug: conta clienti per stato (solo se ci sono problemi)
@@ -618,34 +618,47 @@ function setupEventListeners() {
   // Event listener per il ridimensionamento
   window.addEventListener('resize', handleResize);
   // Bottoni principali
-  document.getElementById('marketing').onclick = ()=>{
-    console.log('Marketing button clicked');
-    // Costo crescente basato sulla potenza attuale
-    const cost = 50 + Math.floor(state.marketingPower / 4);
-    if(state.money < cost){ log('Soldi insufficienti per marketing (€' + cost + ')'); return; }
-    state.money -= cost;
-    
-    // Marketing aggiunge potenza che decade nel tempo
-    const boostAmount = 25; // +25% di potenza marketing
-    state.marketingPower = Math.min(100, state.marketingPower + boostAmount);
-    state.maxMarketingPower = Math.max(state.maxMarketingPower, state.marketingPower);
-    
-    log('Campagna marketing attivata (+' + boostAmount + '% potenza) - Costo: €' + cost);
-    log('Potenza marketing: ' + state.marketingPower.toFixed(1) + '%');
-    updateHUD();
-    saveGame();
-  };
+  const marketingBtn = document.getElementById('marketing');
+  const restockBtn = document.getElementById('restock-all');
   
-  document.getElementById('restock-all').onclick = ()=>{
-    console.log('Restock-all button clicked');
-    const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
-    if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto'); return; }
-    state.money -= cost;
-    state.products.forEach(p=> p.stock += 3);
-    renderItemsPanel(); updateHUD(); 
-    log('Rifornimento completo - Costo: €' + cost.toFixed(2));
-    saveGame();
-  };
+  console.log('Setting up event listeners for:', {
+    marketing: !!marketingBtn,
+    restock: !!restockBtn
+  });
+  
+  if(marketingBtn) {
+    marketingBtn.onclick = ()=>{
+      console.log('Marketing button clicked - Money:', state.money, 'Power:', state.marketingPower);
+      // Costo crescente basato sulla potenza attuale
+      const cost = 50 + Math.floor(state.marketingPower / 4);
+      if(state.money < cost){ log('Soldi insufficienti per marketing (€' + cost + ')'); return; }
+      state.money -= cost;
+      
+      // Marketing aggiunge potenza che decade nel tempo
+      const boostAmount = 25; // +25% di potenza marketing
+      state.marketingPower = Math.min(100, state.marketingPower + boostAmount);
+      state.maxMarketingPower = Math.max(state.maxMarketingPower, state.marketingPower);
+      
+      log('Campagna marketing attivata (+' + boostAmount + '% potenza) - Costo: €' + cost);
+      log('Potenza marketing: ' + state.marketingPower.toFixed(1) + '%');
+      updateHUD();
+      saveGame();
+    };
+  }
+  
+  if(restockBtn) {
+    restockBtn.onclick = ()=>{
+      console.log('Restock-all button clicked - Money:', state.money);
+      const cost = state.products.reduce((s,p)=>s + p.cost*3,0);
+      console.log('Restock cost calculated:', cost);
+      if(state.money < cost){ log('Non hai abbastanza soldi per rifornire tutto (serve €' + cost.toFixed(2) + ')'); return; }
+      state.money -= cost;
+      state.products.forEach(p=> p.stock += 3);
+      renderItemsPanel(); updateHUD(); 
+      log('Rifornimento completo - Costo: €' + cost.toFixed(2));
+      saveGame();
+    };
+  }
   
   document.getElementById('expand').onclick = ()=>{
     const cost = 200;
@@ -691,4 +704,5 @@ function setupEventListeners() {
 
 initShop();
 setupEventListeners();
+updateButtonTexts(); // Aggiorna i costi iniziali
 requestAnimationFrame(frame);
