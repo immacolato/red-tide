@@ -1,0 +1,10 @@
+{
+  "name": "shop-tycoon",
+  "version": "0.1.0",
+  "description": "Prototipo leggero di gioco gestionale - Shop Tycoon",
+  "scripts": {
+    "start": "npx serve ./ -p 5000"
+  },
+  "author": "",
+  "license": "MIT"
+}

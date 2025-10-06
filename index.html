@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Shop Tycoon - Prototipo</title>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div id="container">
+  <div id="game">
+    <canvas id="canvas" width="960" height="640"></canvas>
+  </div>
+  <div id="ui">
+    <div class="header">
+      <div>
+        <div>Shop Tycoon - Prototipo</div>
+        <div style="font-size:13px;color:var(--muted)">Visuale top-down, clienti = puntini</div>
+      </div>
+      <div class="money" id="money">€0</div>
+    </div>
+
+    <div class="panel" id="shop-info">
+      <div>Tempo: <span id="time">0</span>s</div>
+      <div>Clienti attivi: <span id="client-count">0</span> / <span id="client-cap">50</span></div>
+      <div>Spawn rate: <span id="spawn-interval">2.0</span>s</div>
+    </div>
+
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:6px">Prodotti</div>
+      <div id="items-list"></div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="marketing">Marketing (€50) - +spawn</button>
+        <button id="restock-all">Rifornisci tutto (€100)</button>
+        <button id="expand">Espandi negozio (€200)</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:6px">Log</div>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/game.js"></script>
+</body>
+</html>

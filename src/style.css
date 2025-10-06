@@ -1,0 +1,15 @@
+:root{--bg:#111;--panel:#1b1b1b;--accent:#4caf50;--muted:#999}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b0b0b,#141414);color:#eee;font-family:system-ui,Segoe UI,Roboto}
+#container{display:flex;gap:12px;height:100vh;padding:12px;box-sizing:border-box}
+#game{flex:1; background:linear-gradient(#1a2,#091); border-radius:8px; position:relative; overflow:hidden; display:flex;align-items:center;justify-content:center}
+canvas{background:#072; display:block; width:100%; height:100%}
+#ui{width:360px; background:var(--panel); border-radius:8px; padding:12px; box-sizing:border-box; display:flex;flex-direction:column; gap:10px}
+.header{display:flex;justify-content:space-between;align-items:center}
+.money{font-weight:700;color:var(--accent)}
+.panel{background:#0f0f0f;padding:8px;border-radius:6px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.item:last-child{border-bottom:0}
+.controls button{margin-left:6px}
+button{background:#222;color:#fff;border:0;padding:6px 8px;border-radius:6px;cursor:pointer}
+button.small{padding:4px 6px;font-size:13px}
+#log{height:120px;overflow:auto;font-size:13px;color:var(--muted);background:#060606;padding:8px;border-radius:6px}
