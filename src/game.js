@@ -312,8 +312,8 @@ function spawnClient(){
   const crowdFactor = Math.min(1, state.clients.length / state.clientCap);
   const basePlatience = rnd(8,15) * (1 - crowdFactor * 0.3);
   const patience = Math.max(3, basePlatience);
-  const productIndex = Math.floor(rnd(0, state.products.length));
-  const targetShelf = state.shelves.find(s=>s.productIndex===productIndex);
+  let productIndex = Math.floor(rnd(0, state.products.length));
+  let targetShelf = state.shelves.find(s=>s.productIndex===productIndex);
   
   // Se non trova uno scaffale per il prodotto, sceglie un prodotto casuale
   if(!targetShelf && state.shelves.length > 0) {

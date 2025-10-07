@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test GameState Module</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    h2 { color: #666; margin-top: 0; }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .test-pass {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+    .test-fail {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #0056b3; }
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Moduli Core - Shop Tycoon</h1>
+  
+  <div class="test-section">
+    <h2>Test GameState</h2>
+    <button onclick="testGameState()">Esegui Test GameState</button>
+    <div id="gamestate-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test SaveManager</h2>
+    <button onclick="testSaveManager()">Esegui Test SaveManager</button>
+    <div id="savemanager-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Config</h2>
+    <button onclick="testConfig()">Esegui Test Config</button>
+    <div id="config-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Integrazione</h2>
+    <button onclick="testIntegration()">Esegui Test Integrazione</button>
+    <div id="integration-results"></div>
+  </div>
+
+  <script type="module">
+    import { GameState } from './src/core/GameState.js';
+    import { SaveManager } from './src/core/SaveManager.js';
+    import { Config, ConfigUtils } from './src/core/Config.js';
+
+    // Rendi disponibili globalmente per i bottoni
+    window.GameState = GameState;
+    window.SaveManager = SaveManager;
+    window.Config = Config;
+    window.ConfigUtils = ConfigUtils;
+
+    function assert(condition, message) {
+      if (condition) {
+        return `<div class="test-result test-pass">✓ PASS: ${message}</div>`;
+      } else {
+        return `<div class="test-result test-fail">✗ FAIL: ${message}</div>`;
+      }
+    }
+
+    window.testGameState = function() {
+      const results = [];
+      const state = new GameState();
+
+      // Test 1: Inizializzazione
+      results.push(assert(state.money === 150, 'Stato inizializzato con money = 150'));
+      results.push(assert(state.satisfaction === 50, 'Soddisfazione iniziale = 50'));
+      results.push(assert(state.clients.length === 0, 'Nessun cliente all\'inizio'));
+
+      // Test 2: initShop
+      state.initShop();
+      results.push(assert(state.products.length === 4, 'initShop crea 4 prodotti'));
+      results.push(assert(state.shelves.length === 4, 'initShop crea 4 scaffali'));
+
+      // Test 3: addMoney
+      state.addMoney(50);
+      results.push(assert(state.money === 200, 'addMoney(50) porta a 200'));
+
+      // Test 4: spendMoney successo
+      const spent = state.spendMoney(30);
+      results.push(assert(spent === true, 'spendMoney(30) ritorna true'));
+      results.push(assert(state.money === 170, 'Denaro corretto dopo spesa (170)'));
+
+      // Test 5: spendMoney fallimento
+      const failSpent = state.spendMoney(1000);
+      results.push(assert(failSpent === false, 'spendMoney(1000) ritorna false (soldi insufficienti)'));
+      results.push(assert(state.money === 170, 'Denaro non cambiato dopo spesa fallita'));
+
+      // Test 6: updateTime
+      state.updateTime(1.5);
+      results.push(assert(state.time === 1.5, 'updateTime aggiorna correttamente il tempo'));
+
+      // Test 7: updateSatisfaction
+      state.updateSatisfaction(10, 'test');
+      results.push(assert(state.satisfaction === 60, 'Soddisfazione aumenta correttamente'));
+      results.push(assert(state.satisfactionHistory.length === 1, 'History traccia il cambiamento'));
+
+      // Test 8: updateMarketingPower
+      state.updateMarketingPower(30);
+      results.push(assert(state.marketingPower === 30, 'Marketing power aggiornato'));
+      results.push(assert(state.maxMarketingPower === 30, 'Max marketing power aggiornato'));
+
+      // Test 9: addLog
+      state.addLog('Test log');
+      results.push(assert(state.logLines.length === 2, 'Log aggiunto (2 total con satisfaction log)'));
+      results.push(assert(state.logLines[0] === 'Test log', 'Log corretto in cima'));
+
+      // Test 10: getStats
+      const stats = state.getStats();
+      results.push(assert(stats.money === '170.00', 'Stats money formattato correttamente'));
+      results.push(assert(stats.clients === 0, 'Stats clients corretto'));
+
+      document.getElementById('gamestate-results').innerHTML = results.join('');
+    };
+
+    window.testSaveManager = function() {
+      const results = [];
+      const state = new GameState();
+      state.initShop();
+      state.money = 500;
+      state.time = 100;
+
+      const saveManager = new SaveManager(state);
+
+      // Test 1: Salvataggio
+      const saved = saveManager.save();
+      results.push(assert(saved === true, 'Salvataggio completato'));
+
+      // Test 2: Verifica esistenza save
+      const hasSave = saveManager.hasSave();
+      results.push(assert(hasSave === true, 'hasSave() rileva il salvataggio'));
+
+      // Test 3: Caricamento
+      const newState = new GameState();
+      const newSaveManager = new SaveManager(newState);
+      const loaded = newSaveManager.load();
+      results.push(assert(loaded === true, 'Caricamento completato'));
+      results.push(assert(newState.money === 500, 'Money caricato correttamente'));
+      results.push(assert(newState.time === 100, 'Time caricato correttamente'));
+
+      // Test 4: Export
+      const exported = saveManager.exportSave();
+      results.push(assert(exported.includes('500') && exported.includes('money'), 'Export contiene i dati corretti'));
+
+      // Test 5: Reset
+      saveManager.reset();
+      results.push(assert(state.money === 150, 'Reset riporta money a 150'));
+      results.push(assert(!saveManager.hasSave(), 'Reset elimina il salvataggio'));
+
+      document.getElementById('savemanager-results').innerHTML = results.join('');
+    };
+
+    window.testConfig = function() {
+      const results = [];
+
+      // Test 1: Costanti base
+      results.push(assert(Config.INITIAL_MONEY === 150, 'INITIAL_MONEY = 150'));
+      results.push(assert(Config.DEFAULT_PRODUCTS.length === 4, '4 prodotti di default'));
+
+      // Test 2: getExpansionCost
+      const cost1 = ConfigUtils.getExpansionCost(50);
+      results.push(assert(cost1 === 100, 'Primo expansion cost = 100'));
+
+      const cost2 = ConfigUtils.getExpansionCost(60);
+      results.push(assert(cost2 === 150, 'Secondo expansion cost = 150'));
+
+      // Test 3: getMarkup
+      const product = { price: 6, cost: 2 };
+      const markup = ConfigUtils.getMarkup(product);
+      results.push(assert(markup === 200, 'Markup calcolato correttamente (200%)'));
+
+      // Test 4: evaluatePrice
+      const lowPrice = { price: 2.5, cost: 2 };      // markup = 25% < 80%
+      const idealPrice = { price: 4.4, cost: 2 };    // markup = 120% (ideal)
+      const highPrice = { price: 4.8, cost: 2 };     // markup = 140% (high)
+      const veryHighPrice = { price: 6, cost: 2 };   // markup = 200% (very high)
+
+      results.push(assert(ConfigUtils.evaluatePrice(lowPrice) === 'low', 'Prezzo basso riconosciuto'));
+      results.push(assert(ConfigUtils.evaluatePrice(idealPrice) === 'ideal', 'Prezzo ideale riconosciuto'));
+      results.push(assert(ConfigUtils.evaluatePrice(highPrice) === 'high', 'Prezzo alto riconosciuto'));
+      results.push(assert(ConfigUtils.evaluatePrice(veryHighPrice) === 'very_high', 'Prezzo molto alto riconosciuto'));
+
+      // Test 5: getBuyProbability
+      const prob1 = ConfigUtils.getBuyProbability(idealPrice, 0.8);
+      results.push(assert(prob1 > 0.8, 'Alta probabilità per prezzo ideale e mood alto'));
+
+      const prob2 = ConfigUtils.getBuyProbability(veryHighPrice, 0.2);
+      results.push(assert(prob2 < 0.2, 'Bassa probabilità per prezzo molto alto e mood basso'));
+
+      document.getElementById('config-results').innerHTML = results.join('');
+    };
+
+    window.testIntegration = function() {
+      const results = [];
+
+      // Test scenario completo
+      const state = new GameState();
+      state.initShop();
+      const saveManager = new SaveManager(state);
+
+      // Simula una sessione di gioco
+      state.addMoney(100); // Guadagna soldi
+      state.updateTime(10); // 10 secondi passati
+      state.updateSatisfaction(5, 'Cliente felice');
+      state.updateMarketingPower(20);
+
+      // Modifica un prodotto
+      state.products[0].price = 5;
+      state.products[0].stock = 8;
+
+      // Salva
+      saveManager.save();
+      results.push(assert(true, 'Scenario di gioco salvato'));
+
+      // Crea nuova sessione e carica
+      const newState = new GameState();
+      const newSaveManager = new SaveManager(newState);
+      newSaveManager.load();
+
+      // Verifica che tutto sia stato caricato
+      results.push(assert(newState.money === 250, 'Money caricato (250)'));
+      results.push(assert(newState.time === 10, 'Time caricato (10)'));
+      results.push(assert(newState.satisfaction === 55, 'Satisfaction caricato (55)'));
+      results.push(assert(newState.marketingPower === 20, 'Marketing power caricato (20)'));
+      results.push(assert(newState.products[0].price === 5, 'Prezzo prodotto caricato (5)'));
+      results.push(assert(newState.products[0].stock === 8, 'Stock prodotto caricato (8)'));
+
+      // Test utilizzo Config con GameState
+      const markup = ConfigUtils.getMarkup(newState.products[0]);
+      const evaluation = ConfigUtils.evaluatePrice(newState.products[0]);
+      results.push(assert(markup > 100, `Markup prodotto calcolato: ${markup.toFixed(0)}%`));
+      results.push(assert(evaluation !== '', `Valutazione prezzo: ${evaluation}`));
+
+      // Cleanup
+      saveManager.reset();
+
+      document.getElementById('integration-results').innerHTML = results.join('');
+    };
+
+    // Auto-run tutti i test all'apertura
+    window.addEventListener('load', () => {
+      console.log('🧪 Test environment ready');
+      console.log('Click sui bottoni per eseguire i test');
+    });
+  </script>
+</body>
+</html>
