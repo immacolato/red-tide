@@ -28,11 +28,7 @@
     <div class="phase-info">
       <div class="phase-name" id="phase-name">FASE 1: IL CIRCOLO</div>
       <div class="phase-goal">
-        <span id="goal-description">Converti 50 cittadini</span>
-        <div class="progress-bar">
-          <div class="progress-fill" id="goal-progress" style="width: 0%"></div>
-        </div>
-        <span id="goal-text">0 / 50</span>
+        <span id="phase-progress">Obiettivi: Converti 50 cittadini</span>
       </div>
     </div>
 
@@ -47,13 +43,25 @@
       <div class="stat-card">
         <div class="stat-icon">👥</div>
         <div class="stat-label">Cittadini</div>
-        <div class="stat-value"><span id="citizen-count">0</span>/<span id="capacity">20</span></div>
+        <div class="stat-value"><span id="citizen-count">0</span>/<span id="citizen-cap">20</span></div>
       </div>
       
       <div class="stat-card">
         <div class="stat-icon">✊</div>
         <div class="stat-label">Convertiti</div>
-        <div class="stat-value" id="converts">0</div>
+        <div class="stat-value" id="total-converts">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">🤝</div>
+        <div class="stat-label">Compagni</div>
+        <div class="stat-value" id="comrades-count">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-label">Spawn Rate</div>
+        <div class="stat-value" id="spawn-interval">2.5s</div>
       </div>
     </div>
     
@@ -118,11 +126,11 @@
           </div>
         </button>
         
-        <button id="print-flyers" class="action-btn secondary">
+        <button id="restock-all" class="action-btn secondary">
           <span class="btn-icon">📄</span>
           <div class="btn-content">
             <div class="btn-title">Stampa Volantini</div>
-            <div class="btn-subtitle"><span id="restock-cost">0</span> influenza</div>
+            <div class="btn-subtitle">Rifornisci tutti i materiali</div>
           </div>
         </button>
         
@@ -141,6 +149,7 @@
       <div class="utility-buttons">
         <button id="save-game" class="utility-btn">💾 Salva</button>
         <button id="reset-game" class="utility-btn danger">🔄 Reset</button>
+        <button id="clear-citizens" class="utility-btn" style="display:none">🧹 Clear</button>
       </div>
     </div>
 
