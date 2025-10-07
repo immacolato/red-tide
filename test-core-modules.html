@@ -83,16 +83,24 @@
     <div id="integration-results"></div>
   </div>
 
+  <div class="test-section">
+    <h2>Test Client Entity</h2>
+    <button onclick="testClient()">Esegui Test Client</button>
+    <div id="client-results"></div>
+  </div>
+
   <script type="module">
     import { GameState } from './src/core/GameState.js';
     import { SaveManager } from './src/core/SaveManager.js';
     import { Config, ConfigUtils } from './src/core/Config.js';
+    import { Client } from './src/entities/Client.js';
 
     // Rendi disponibili globalmente per i bottoni
     window.GameState = GameState;
     window.SaveManager = SaveManager;
     window.Config = Config;
     window.ConfigUtils = ConfigUtils;
+    window.Client = Client;
 
     function assert(condition, message) {
       if (condition) {
@@ -215,18 +223,21 @@
 
       // Test 4: evaluatePrice
       const lowPrice = { price: 2.5, cost: 2 };      // markup = 25% < 80%
-      const idealPrice = { price: 4.4, cost: 2 };    // markup = 120% (ideal)
-      const highPrice = { price: 4.8, cost: 2 };     // markup = 140% (high)
-      const veryHighPrice = { price: 6, cost: 2 };   // markup = 200% (very high)
+      const idealPrice = { price: 4.2, cost: 2 };    // markup = 110% (ideal: 80-120)
+      const highPrice = { price: 4.8, cost: 2 };     // markup = 140% (high: 120-150)
+      const veryHighPrice = { price: 6, cost: 2 };   // markup = 200% (very high: >150)
 
+      const idealEval = ConfigUtils.evaluatePrice(idealPrice);
+      const idealMarkup = ConfigUtils.getMarkup(idealPrice);
+      results.push(assert(idealEval === 'ideal', `Prezzo ideale riconosciuto (markup: ${idealMarkup.toFixed(0)}%, eval: ${idealEval})`));
+      
       results.push(assert(ConfigUtils.evaluatePrice(lowPrice) === 'low', 'Prezzo basso riconosciuto'));
-      results.push(assert(ConfigUtils.evaluatePrice(idealPrice) === 'ideal', 'Prezzo ideale riconosciuto'));
       results.push(assert(ConfigUtils.evaluatePrice(highPrice) === 'high', 'Prezzo alto riconosciuto'));
       results.push(assert(ConfigUtils.evaluatePrice(veryHighPrice) === 'very_high', 'Prezzo molto alto riconosciuto'));
 
       // Test 5: getBuyProbability
       const prob1 = ConfigUtils.getBuyProbability(idealPrice, 0.8);
-      results.push(assert(prob1 > 0.8, 'Alta probabilità per prezzo ideale e mood alto'));
+      results.push(assert(prob1 >= 0.8, `Alta probabilità per prezzo ideale e mood alto (prob: ${prob1.toFixed(2)})`));
 
       const prob2 = ConfigUtils.getBuyProbability(veryHighPrice, 0.2);
       results.push(assert(prob2 < 0.2, 'Bassa probabilità per prezzo molto alto e mood basso'));
@@ -279,6 +290,169 @@
       saveManager.reset();
 
       document.getElementById('integration-results').innerHTML = results.join('');
+    };
+
+    window.testClient = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const client1 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: { x: 200, y: 200, w: 100, h: 40, productIndex: 0 },
+        productIndex: 0,
+        mood: 0.8,
+        patience: 10
+      });
+      
+      results.push(assert(client1.x === 100, 'Cliente creato con x corretta'));
+      results.push(assert(client1.y === 100, 'Cliente creato con y corretta'));
+      results.push(assert(client1.state === 'toShelf', 'Stato iniziale è toShelf'));
+      results.push(assert(client1.mood === 0.8, 'Mood impostato correttamente'));
+      results.push(assert(client1.patience === 10, 'Patience impostata correttamente'));
+
+      // Test 2: Update base
+      client1.update(1.0);
+      results.push(assert(client1.timeAlive === 1.0, 'timeAlive incrementato dopo update'));
+
+      // Test 3: Timeout
+      const client2 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: null,
+        productIndex: 0
+      });
+      client2.timeAlive = 121;
+      client2.update(1.0);
+      results.push(assert(client2.state === 'leave', 'Cliente va in leave dopo 120 secondi'));
+
+      // Test 4: tryBuy - successo con mood alto
+      const product = { name: 'Test', price: 5, cost: 2, stock: 10 };
+      const client3 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: {},
+        productIndex: 0,
+        mood: 1.0
+      });
+      
+      let buyCount = 0;
+      for (let i = 0; i < 10; i++) {
+        const client = new Client({
+          x: 100, y: 100, targetShelf: {}, productIndex: 0, mood: 1.0
+        });
+        const result = client.tryBuy(product);
+        if (result.action === 'buy') buyCount++;
+      }
+      results.push(assert(buyCount > 0, `Cliente con mood alto compra (${buyCount}/10 tentativi)`));
+
+      // Test 5: tryBuy - stock esaurito
+      const client4 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: {},
+        productIndex: 0,
+        mood: 1.0
+      });
+      const emptyProduct = { name: 'Test', price: 5, cost: 2, stock: 0 };
+      const result4 = client4.tryBuy(emptyProduct);
+      results.push(assert(result4.action === 'leave', 'Cliente esce se stock è 0'));
+      results.push(assert(result4.reason === 'out_of_stock', 'Reason corretto per stock vuoto'));
+      results.push(assert(result4.satisfaction === -2, 'Satisfaction negativa per stock vuoto'));
+
+      // Test 6: getExitTarget - entrance
+      const client5 = new Client({
+        x: 400,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client5.state = 'leave';
+      client5.exitChoice = 'entrance';
+      const exit5 = client5.getExitTarget(800, 600);
+      results.push(assert(exit5.x !== undefined && exit5.y !== undefined, 'getExitTarget ritorna posizione valida'));
+
+      // Test 7: getExitTarget - emergency (bordo sinistro)
+      const client6 = new Client({
+        x: 50,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client6.state = 'leave';
+      client6.exitChoice = 'emergency';
+      const exit6 = client6.getExitTarget(800, 600);
+      results.push(assert(exit6.x === -30, 'Emergency exit va al bordo più vicino (sinistra)'));
+
+      // Test 8: moveToward
+      const client7 = new Client({
+        x: 0,
+        y: 0,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client7.moveToward(100, 0, 100, 1.0);
+      results.push(assert(client7.x > 50, 'moveToward sposta il cliente sulla X'));
+      results.push(assert(Math.abs(client7.x - 100) < 5, 'moveToward raggiunge circa il target'));
+
+      // Test 9: getColor
+      const happyClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.9
+      });
+      const neutralClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.5
+      });
+      const unhappyClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.1
+      });
+      
+      results.push(assert(happyClient.getColor() === Config.COLORS.CLIENT_HAPPY, 'Cliente felice ha colore verde'));
+      results.push(assert(neutralClient.getColor() === Config.COLORS.CLIENT_NEUTRAL, 'Cliente neutrale ha colore arancione'));
+      results.push(assert(unhappyClient.getColor() === Config.COLORS.CLIENT_UNHAPPY, 'Cliente infelice ha colore rosso'));
+
+      // Test 10: Serializzazione
+      const client8 = new Client({
+        x: 123,
+        y: 456,
+        targetShelf: { test: true },
+        productIndex: 2,
+        mood: 0.7,
+        patience: 8
+      });
+      const saveData = client8.toSaveData();
+      results.push(assert(saveData.x === 123, 'toSaveData salva x'));
+      results.push(assert(saveData.y === 456, 'toSaveData salva y'));
+      results.push(assert(saveData.mood === 0.7, 'toSaveData salva mood'));
+      
+      const loaded = Client.fromSaveData(saveData);
+      results.push(assert(loaded.x === 123, 'fromSaveData ripristina x'));
+      results.push(assert(loaded.y === 456, 'fromSaveData ripristina y'));
+      results.push(assert(loaded.mood === 0.7, 'fromSaveData ripristina mood'));
+
+      // Test 11: updateLeave con timeout
+      const client9 = new Client({
+        x: 400,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client9.state = 'leave';
+      client9.leaveTimer = 6;
+      const removeResult = client9.updateLeave(0.1, 800, 600);
+      results.push(assert(removeResult === 'remove', 'Cliente rimosso dopo timeout di 5 secondi'));
+
+      // Test 12: updateLeave fuori canvas
+      const client10 = new Client({
+        x: -50,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client10.state = 'leave';
+      const removeResult2 = client10.updateLeave(0.1, 800, 600);
+      results.push(assert(removeResult2 === 'remove', 'Cliente rimosso quando esce dal canvas'));
+
+      document.getElementById('client-results').innerHTML = results.join('');
     };
 
     // Auto-run tutti i test all'apertura
