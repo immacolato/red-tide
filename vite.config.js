@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
-  base: './', // Per GitHub Pages
+  base: '/red-tide/', // Per GitHub Pages con repository name
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
