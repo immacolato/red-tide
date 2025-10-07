@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Shop Tycoon - Prototipo</title>
-<link rel="stylesheet" href="src/style.css">
+<title>Red Tide - The Revolution Simulator</title>
+<link rel="stylesheet" href="src/revolution-style.css">
 </head>
 <body>
 <div id="container">
@@ -12,17 +12,31 @@
     <canvas id="canvas" width="960" height="640"></canvas>
   </div>
   <div id="ui">
+    <!-- HEADER -->
     <div class="header">
       <div>
-        <div class="game-title">🏪 Shop Tycoon</div>
-        <div class="game-subtitle">Gestisci il tuo negozio</div>
+        <div class="game-title">🚩 Red Tide</div>
+        <div class="game-subtitle">The Revolution Simulator</div>
       </div>
-      <div class="money-display">
-        <div class="money-label">💰 Bilancio</div>
-        <div class="money" id="money">€0</div>
+      <div class="influence-display">
+        <div class="influence-label">⚡ Influenza</div>
+        <div class="influence" id="influence">0</div>
       </div>
     </div>
 
+    <!-- PHASE INFO -->
+    <div class="phase-info">
+      <div class="phase-name" id="phase-name">FASE 1: IL CIRCOLO</div>
+      <div class="phase-goal">
+        <span id="goal-description">Converti 50 cittadini</span>
+        <div class="progress-bar">
+          <div class="progress-fill" id="goal-progress" style="width: 0%"></div>
+        </div>
+        <span id="goal-text">0 / 50</span>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">⏱️</div>
@@ -32,89 +46,91 @@
       
       <div class="stat-card">
         <div class="stat-icon">👥</div>
-        <div class="stat-label">Clienti</div>
-        <div class="stat-value"><span id="client-count">0</span>/<span id="client-cap">50</span></div>
+        <div class="stat-label">Cittadini</div>
+        <div class="stat-value"><span id="citizen-count">0</span>/<span id="capacity">20</span></div>
       </div>
       
       <div class="stat-card">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-label">Spawn Rate</div>
-        <div class="stat-value" id="spawn-interval">2.0s</div>
+        <div class="stat-icon">✊</div>
+        <div class="stat-label">Convertiti</div>
+        <div class="stat-value" id="converts">0</div>
       </div>
     </div>
     
     <div class="divider"></div>
     
+    <!-- METRICS -->
     <div class="panel metrics-panel">
-      <div class="panel-title">📊 Metriche Negozio</div>
+      <div class="panel-title">📊 Metriche del Movimento</div>
       
       <div class="metric">
         <div class="metric-header">
-          <span class="metric-icon">📈</span>
-          <span class="metric-name">Marketing</span>
-          <span class="metric-value" id="marketing-value">0%</span>
+          <span class="metric-name">🧠 Coscienza di Classe</span>
+          <span class="metric-value" id="consciousness-value">50%</span>
         </div>
         <div class="progress-bar modern">
-          <div class="progress-fill marketing" id="marketing-bar"></div>
+          <div class="progress-fill consciousness" id="consciousness-bar" style="width: 50%"></div>
         </div>
       </div>
       
       <div class="metric">
         <div class="metric-header">
-          <span class="metric-icon">😊</span>
-          <span class="metric-name">Soddisfazione</span>
-          <span class="metric-value" id="satisfaction-value">50%</span>
+          <span class="metric-name">📢 Potere Assembleare</span>
+          <span class="metric-value" id="assembly-value">0%</span>
         </div>
         <div class="progress-bar modern">
-          <div class="progress-fill satisfaction" id="satisfaction-bar"></div>
-        </div>
-      </div>
-      
-      <div class="metric">
-        <div class="metric-header">
-          <span class="metric-icon">💰</span>
-          <span class="metric-name">Attrattività Prezzi</span>
-          <span class="metric-value" id="price-attractiveness-value">50%</span>
-        </div>
-        <div class="progress-bar modern">
-          <div class="progress-fill price-attractiveness" id="price-attractiveness-bar"></div>
+          <div class="progress-fill assembly" id="assembly-bar" style="width: 0%"></div>
         </div>
       </div>
     </div>
 
     <div class="divider"></div>
 
-    <div class="panel products-panel">
-      <div class="panel-title">🛍️ Prodotti del Negozio</div>
-      <div id="items-list" class="products-grid"></div>
+    <!-- TOPICS -->
+    <div class="panel topics-panel">
+      <div class="panel-title">📚 Tematiche Disponibili</div>
+      <div id="topics-list" class="topics-grid"></div>
     </div>
 
     <div class="divider"></div>
 
+    <!-- COMRADES -->
+    <div class="panel comrades-panel">
+      <div class="panel-title">✊ Compagni</div>
+      <div id="comrades-list" class="comrades-grid"></div>
+      <div class="comrades-available">
+        <div class="panel-subtitle">Assumi nuovi compagni:</div>
+        <div id="available-comrades" class="available-grid"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ACTIONS -->
     <div class="panel actions-panel">
-      <div class="panel-title">🎯 Azioni Strategiche</div>
+      <div class="panel-title">🎯 Azioni</div>
       <div class="action-buttons">
-        <button id="marketing" class="action-btn primary">
+        <button id="assembly" class="action-btn primary">
           <span class="btn-icon">📢</span>
           <div class="btn-content">
-            <div class="btn-title">Campagna Marketing</div>
-            <div class="btn-subtitle"><span id="marketing-cost">€20</span> • +30% potenza (decade nel tempo)</div>
+            <div class="btn-title">Assemblea Pubblica</div>
+            <div class="btn-subtitle"><span id="assembly-cost">30</span> influenza • +25% potenza</div>
           </div>
         </button>
         
-        <button id="restock-all" class="action-btn secondary">
-          <span class="btn-icon">📦</span>
+        <button id="print-flyers" class="action-btn secondary">
+          <span class="btn-icon">📄</span>
           <div class="btn-content">
-            <div class="btn-title">Rifornisci tutto</div>
-            <div class="btn-subtitle"><span id="restock-cost">€100</span> • +10 stock per prodotto</div>
+            <div class="btn-title">Stampa Volantini</div>
+            <div class="btn-subtitle"><span id="restock-cost">0</span> influenza</div>
           </div>
         </button>
         
         <button id="expand" class="action-btn tertiary">
           <span class="btn-icon">🏗️</span>
           <div class="btn-content">
-            <div class="btn-title">Espandi negozio</div>
-            <div class="btn-subtitle">€200 • +10 capacità</div>
+            <div class="btn-title">Sala Più Grande</div>
+            <div class="btn-subtitle"><span id="expand-cost">150</span> influenza</div>
           </div>
         </button>
       </div>
@@ -125,12 +141,12 @@
       <div class="utility-buttons">
         <button id="save-game" class="utility-btn">💾 Salva</button>
         <button id="reset-game" class="utility-btn danger">🔄 Reset</button>
-        <button id="clear-clients" class="utility-btn">🧹 Pulisci</button>
       </div>
     </div>
 
     <div class="divider"></div>
 
+    <!-- LOG -->
     <div class="panel log-panel">
       <div class="panel-title">📜 Log Attività</div>
       <div id="log" class="log-content"></div>
@@ -138,6 +154,6 @@
   </div>
 </div>
 
-<script type="module" src="src/main.js"></script>
+<script type="module" src="src/revolution-main.js"></script>
 </body>
 </html>

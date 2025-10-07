@@ -1,96 +1,189 @@
-# 🏪 Shop Tycoon
+# 🚩 Red Tide - The Revolution Simulator# 🏪 Shop Tycoon
 
-[![Live Demo](https://img.shields.io/badge/demo-visit-blue)](https://immacolato.github.io/shop-tycoon/)
+
+
+Un gioco di strategia e gestione dove guidi un movimento rivoluzionario dalla nascita alla vittoria.[![Live Demo](https://img.shields.io/badge/demo-visit-blue)](https://immacolato.github.io/shop-tycoon/)
+
 [![Deploy](https://github.com/immacolato/shop-tycoon/actions/workflows/deploy.yml/badge.svg)](https://github.com/immacolato/shop-tycoon/actions)
+
+## 🎮 Gioca Ora
 
 Un simulatore di gestione negozio con meccaniche di tycoon game. Gestisci il tuo negozio, imposta prezzi, rifornisci prodotti e soddisfa i clienti!
 
+**👉 [Gioca su GitHub Pages](https://immacolato.github.io/red-tide/)**
+
 ## 🎮 Features
 
+## 📖 Descrizione
+
 - ✅ Sistema di spawn clienti dinamico basato su marketing e soddisfazione
-- ✅ Sistema di prezzi con feedback in tempo reale
+
+Red Tide è un simulatore di rivoluzione in cui parti da un piccolo circolo di attivisti e cresci fino a trasformare un'intera nazione. Ogni fase rappresenta una scala diversa del movimento:- ✅ Sistema di prezzi con feedback in tempo reale
+
 - ✅ Gestione stock e rifornimento prodotti
-- ✅ Sistema di soddisfazione clienti
-- ✅ Marketing con effetti nel tempo
-- ✅ Espansione negozio
-- ✅ Salvataggio automatico e manuale (localStorage)
-- ✅ Effetti visivi (denaro fluttuante)
-- ✅ UI moderna con metriche dettagliate
 
-## 🚀 Come Iniziare
+### 🏠 Fase 1: Il Circolo- ✅ Sistema di soddisfazione clienti
 
-### Opzione 1: Gioca Subito
+Il seme della rivoluzione. Converti cittadini alle tue idee attraverso tematiche contemporanee come:- ✅ Marketing con effetti nel tempo
+
+- 🚴 **Gig Economy** - Rider e freelance senza diritti- ✅ Espansione negozio
+
+- 🏠 **Crisi Abitativa** - Affitti impossibili per i giovani- ✅ Salvataggio automatico e manuale (localStorage)
+
+- 🧠 **Salute Mentale** - Burnout e ansia da lavoro- ✅ Effetti visivi (denaro fluttuante)
+
+- 💰 **Stagnazione Salari** - I salari non crescono da decenni- ✅ UI moderna con metriche dettagliate
+
+
+
+### 🎯 Meccaniche Principali## 🚀 Come Iniziare
+
+
+
+**Influenza Sociale**: La risorsa principale del gioco. La ottieni convertendo cittadini e la spendi per azioni strategiche.### Opzione 1: Gioca Subito
+
 ```bash
-# Apri direttamente index.html nel browser
+
+**Coscienza di Classe**: Indica quanto la popolazione è ricettiva alle tue idee. Più è alta, più facile convertire nuovi compagni.# Apri direttamente index.html nel browser
+
 open index.html
-```
 
-### Opzione 2: Con Server Locale (Consigliato)
-```bash
-# Usa npx serve
-npx serve ./ -p 5000
+**Tipi di Cittadini**:```
+
+- 🎓 **Studenti** - Ricettivi e veloci a diffondere idee
+
+- 💼 **Precari** - Molto ricettivi, influenza media### Opzione 2: Con Server Locale (Consigliato)
+
+- 😔 **Disoccupati** - Estremamente ricettivi ma con poca influenza```bash
+
+- 👷 **Lavoratori** - Meno ricettivi ma alta influenza# Usa npx serve
+
+- 📚 **Intellettuali** - Difficili da convincere ma moltiplicano l'influenzanpx serve ./ -p 5000
+
 # Apri http://localhost:5000
-```
 
-### Opzione 3: Con Build Tool (Per Sviluppo)
+**Sistema Compagni**: Assumi volontari, organizzatori ed educatori che forniscono boost passivi e automatizzano alcune meccaniche.```
+
+
+
+## 🚀 Sviluppo### Opzione 3: Con Build Tool (Per Sviluppo)
+
 ```bash
-# Installa dipendenze
+
+### Setup Locale# Installa dipendenze
+
 npm install
 
-# Avvia server di sviluppo con Vite
-npm run dev
+```bash
+
+# Clona il repository# Avvia server di sviluppo con Vite
+
+git clone https://github.com/immacolato/red-tide.gitnpm run dev
+
+cd red-tide
 
 # Build per produzione
-npm run build
+
+# Installa dipendenzenpm run build
+
+npm install```
+
+
+
+# Avvia il server di sviluppo## 📁 Struttura del Progetto
+
+npm run dev
+
+```### Struttura Attuale
+
 ```
 
-## 📁 Struttura del Progetto
+### Struttura Progettoshop-tycoon/
 
-### Struttura Attuale
-```
-shop-tycoon/
 ├── index.html              # Pagina principale
-├── src/
-│   ├── game.js            # Logica del gioco (~900 righe)
-│   └── style.css          # Stili UI
-├── package.json           # Dipendenze e scripts
-├── vite.config.js         # Configurazione build
-└── .github/workflows/     # CI/CD
-```
 
-### 🔄 Ristrutturazione in Corso
+```├── src/
+
+red-tide/│   ├── game.js            # Logica del gioco (~900 righe)
+
+├── src/│   └── style.css          # Stili UI
+
+│   ├── core/              # Game state, configurazione, fase manager├── package.json           # Dipendenze e scripts
+
+│   ├── entities/          # Citizen, Topic, InfoDesk, Comrade├── vite.config.js         # Configurazione build
+
+│   ├── systems/           # Spawn system└── .github/workflows/     # CI/CD
+
+│   └── revolution-main.js # Entry point```
+
+├── index.html             # HTML principale
+
+└── README.md### 🔄 Ristrutturazione in Corso
+
+```
 
 Il progetto sta subendo un **refactoring importante** per migliorare:
-- 📦 **Modularità**: Separazione in moduli riutilizzabili
+
+### Tecnologie- 📦 **Modularità**: Separazione in moduli riutilizzabili
+
 - 🧪 **Testabilità**: Codice testabile unitariamente
-- 📱 **App-ready**: Pronto per diventare app desktop/mobile
-- 🔧 **Manutenibilità**: Più facile da estendere e debuggare
 
-👉 Leggi il [**Piano di Refactoring Completo**](./REFACTORING_PLAN.md)
+- **Vanilla JavaScript** (ES6 Modules)- 📱 **App-ready**: Pronto per diventare app desktop/mobile
 
-### Esempi di Moduli Refactorizzati
+- **Canvas API** per rendering- 🔧 **Manutenibilità**: Più facile da estendere e debuggare
 
-Abbiamo preparato alcuni esempi di come sarà il codice dopo il refactoring:
-- `EXAMPLE_GameState.js` - Gestione stato centralizzata
-- `EXAMPLE_Client.js` - Classe per i clienti
-- `EXAMPLE_SpawnSystem.js` - Sistema di spawn modulare
+- **Vite** per build e dev server
 
-## 🎯 Roadmap
+- **CSS Custom Properties** per theming👉 Leggi il [**Piano di Refactoring Completo**](./REFACTORING_PLAN.md)
 
-### ✅ Completato
+
+
+## 🎨 Fasi Future### Esempi di Moduli Refactorizzati
+
+
+
+- **Fase 2**: Movimento Urbano (scala quartiere)Abbiamo preparato alcuni esempi di come sarà il codice dopo il refactoring:
+
+- **Fase 3**: Sindacato (scala città)- `EXAMPLE_GameState.js` - Gestione stato centralizzata
+
+- **Fase 4**: Partito Politico (scala regione)  - `EXAMPLE_Client.js` - Classe per i clienti
+
+- **Fase 5**: La Rivoluzione (scala nazionale)- `EXAMPLE_SpawnSystem.js` - Sistema di spawn modulare
+
+
+
+## 📝 Licenza## 🎯 Roadmap
+
+
+
+MIT License - Vedi [LICENSE](LICENSE)### ✅ Completato
+
 - Sistema di gioco completo e funzionante
-- Salvataggio/caricamento automatico
-- UI moderna e responsive
-- Deploy automatico su GitHub Pages
 
-### ⏳ In Corso (Fase 1: Refactoring)
+## 🤝 Contributi- Salvataggio/caricamento automatico
+
+- UI moderna e responsive
+
+Contributi, issues e feature requests sono benvenuti!- Deploy automatico su GitHub Pages
+
+
+
+## 👨‍💻 Autore### ⏳ In Corso (Fase 1: Refactoring)
+
 - Setup build system con Vite
-- Separazione codice in moduli
-- Configurazione linting e formatting
+
+**immacolato**- Separazione codice in moduli
+
+- GitHub: [@immacolato](https://github.com/immacolato)- Configurazione linting e formatting
+
 - Documentazione architettura
 
+---
+
 ### 📋 Prossimi Passi
-- **Fase 2**: Nuove features (dipendenti, achievements, statistiche)
+
+⭐ Se ti piace il progetto, lascia una stella!- **Fase 2**: Nuove features (dipendenti, achievements, statistiche)
+
 - **Fase 3**: Miglioramenti grafici (sprite, animazioni)
 - **Fase 4**: Packaging come app (Electron/Tauri per desktop, Capacitor per mobile)
 
