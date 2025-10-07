@@ -15,20 +15,28 @@
    - ✅ `PhaseManager.js` - Gestione fasi e transizioni
    - ✅ `Comrade.js` - Entità compagni con boost passivi
 
+3. **Entità Adattate**
+   - ✅ `Citizen.js` (ex-Client) - Con tipo, receptivity, influenza
+   - ✅ `Topic.js` (ex-Product) - Tematiche con appeal, difficoltà, impatto
+   - ✅ `InfoDesk.js` (ex-Shelf) - Banchi informativi
+   - ✅ Logica conversione invece di vendita
+
+4. **State Management**
+   - ✅ `RevolutionGameState.js` - Gestione completa stato
+   - ✅ influence invece di money
+   - ✅ consciousness invece di satisfaction
+   - ✅ Sistema converts tracking
+   - ✅ Gestione Comrades con effetti passivi
+   - ✅ Sistema assemblee
+   - ✅ goalReached flag
+
 ### 🚧 Da Fare
 
-3. **Adattamento Entità Esistenti**
-   - [ ] Rinominare `Client.js` → `Citizen.js`
-   - [ ] Rinominare `Product.js` → `Topic.js`
-   - [ ] Rinominare `Shelf.js` → `InfoDesk.js` (banchi informativi)
-   - [ ] Adattare logica per le nuove meccaniche
-
-4. **Adattamento GameState**
-   - [ ] Rinominare proprietà (money → influence, satisfaction → consciousness)
-   - [ ] Integrare PhaseManager
-   - [ ] Aggiungere gestione Comrades
-   - [ ] Sistema "converts" tracking
-   - [ ] Aggiungere goalReached flag
+5. **Adattamento SpawnSystem**
+   - [ ] Usare RevolutionConfig invece di Config
+   - [ ] Spawn basato su citizenTypes
+   - [ ] Spawn pesato per tipo di cittadino
+   - [ ] Integrazione con consciousness
 
 5. **Adattamento SpawnSystem**
    - [ ] Usare citizenTypes invece di logica generica
