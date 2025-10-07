@@ -95,11 +95,25 @@
     <div id="spawnsystem-results"></div>
   </div>
 
+  <div class="test-section">
+    <h2>Test Product Entity</h2>
+    <button onclick="testProduct()">Esegui Test Product</button>
+    <div id="product-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Shelf Entity</h2>
+    <button onclick="testShelf()">Esegui Test Shelf</button>
+    <div id="shelf-results"></div>
+  </div>
+
   <script type="module">
     import { GameState } from './src/core/GameState.js';
     import { SaveManager } from './src/core/SaveManager.js';
     import { Config, ConfigUtils } from './src/core/Config.js';
     import { Client } from './src/entities/Client.js';
+    import { Product } from './src/entities/Product.js';
+    import { Shelf } from './src/entities/Shelf.js';
     import { SpawnSystem } from './src/systems/SpawnSystem.js';
 
     // Rendi disponibili globalmente per i bottoni
@@ -108,6 +122,8 @@
     window.Config = Config;
     window.ConfigUtils = ConfigUtils;
     window.Client = Client;
+    window.Product = Product;
+    window.Shelf = Shelf;
     window.SpawnSystem = SpawnSystem;
 
     function assert(condition, message) {
@@ -594,6 +610,215 @@
       results.push(assert(spawnSystem.spawnTimer === 0, 'reset azzera il timer'));
 
       document.getElementById('spawnsystem-results').innerHTML = results.join('');
+    };
+
+    window.testProduct = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const product = new Product({
+        name: 'Snack',
+        price: 5,
+        cost: 2,
+        stock: 10
+      });
+      
+      results.push(assert(product.name === 'Snack', 'Nome impostato correttamente'));
+      results.push(assert(product.price === 5, 'Prezzo impostato correttamente'));
+      results.push(assert(product.cost === 2, 'Costo impostato correttamente'));
+      results.push(assert(product.stock === 10, 'Stock impostato correttamente'));
+
+      // Test 2: getProfit
+      const profit = product.getProfit();
+      results.push(assert(profit === 3, 'Profitto calcolato correttamente (5-2=3)'));
+
+      // Test 3: getMarkup
+      const markup = product.getMarkup();
+      results.push(assert(markup === 150, 'Markup calcolato correttamente ((5-2)/2*100=150%)'));
+
+      // Test 4: sell
+      const sellResult = product.sell();
+      results.push(assert(sellResult === true, 'Vendita riuscita con stock disponibile'));
+      results.push(assert(product.stock === 9, 'Stock decrementato dopo vendita'));
+
+      // Test 5: sell con stock 0
+      const emptyProduct = new Product({ name: 'Empty', price: 5, cost: 2, stock: 0 });
+      const sellFail = emptyProduct.sell();
+      results.push(assert(sellFail === false, 'Vendita fallita con stock 0'));
+      results.push(assert(emptyProduct.stock === 0, 'Stock rimane 0 dopo vendita fallita'));
+
+      // Test 6: restock
+      product.restock(5);
+      results.push(assert(product.stock === 14, 'Restock aggiunge quantità (9+5=14)'));
+
+      // Test 7: setPrice
+      product.setPrice(10);
+      results.push(assert(product.price === 10, 'setPrice cambia il prezzo'));
+
+      // Test 8: setPrice sotto costo
+      product.setPrice(1);
+      results.push(assert(product.price === 2, 'setPrice non scende sotto il costo'));
+
+      // Test 9: increasePrice / decreasePrice
+      product.increasePrice(3);
+      results.push(assert(product.price === 5, 'increasePrice aumenta il prezzo (2+3=5)'));
+      
+      product.decreasePrice(1);
+      results.push(assert(product.price === 4, 'decreasePrice diminuisce il prezzo (5-1=4)'));
+
+      // Test 10: isOutOfStock
+      results.push(assert(product.isOutOfStock() === false, 'isOutOfStock false con stock > 0'));
+      results.push(assert(emptyProduct.isOutOfStock() === true, 'isOutOfStock true con stock 0'));
+
+      // Test 11: isLowStock
+      const lowProduct = new Product({ name: 'Low', price: 5, cost: 2, stock: 3 });
+      results.push(assert(lowProduct.isLowStock() === true, 'isLowStock true con stock < 5'));
+      results.push(assert(product.isLowStock() === false, 'isLowStock false con stock >= 5'));
+
+      // Test 12: getStockStatus
+      results.push(assert(emptyProduct.getStockStatus() === 'out_of_stock', 'Status corretto per stock 0'));
+      results.push(assert(lowProduct.getStockStatus() === 'low_stock', 'Status corretto per stock basso'));
+      results.push(assert(product.getStockStatus() === 'in_stock', 'Status corretto per stock normale'));
+
+      // Test 13: getRestockCost
+      const restockCost = product.getRestockCost(10);
+      results.push(assert(restockCost === 20, 'Costo restock calcolato (10*2=20)'));
+
+      // Test 14: getStockValue
+      const stockValue = product.getStockValue();
+      results.push(assert(stockValue === 28, `Valore stock calcolato (14*2=${stockValue})`));
+
+      // Test 15: getPotentialProfit
+      const potentialProfit = product.getPotentialProfit();
+      const expected = 14 * (product.price - product.cost);
+      results.push(assert(potentialProfit === expected, `Profitto potenziale calcolato (${expected})`));
+
+      // Test 16: getStats
+      const stats = product.getStats();
+      results.push(assert(stats.name === 'Snack', 'getStats contiene nome'));
+      results.push(assert(stats.stock === 14, 'getStats contiene stock'));
+      results.push(assert(stats.stockStatus === 'in_stock', 'getStats contiene status'));
+
+      // Test 17: Serializzazione
+      const saveData = product.toSaveData();
+      results.push(assert(saveData.name === 'Snack', 'toSaveData salva nome'));
+      results.push(assert(saveData.price === 4, 'toSaveData salva prezzo'));
+      results.push(assert(saveData.stock === 14, 'toSaveData salva stock'));
+
+      const loaded = Product.fromSaveData(saveData);
+      results.push(assert(loaded.name === 'Snack', 'fromSaveData ripristina nome'));
+      results.push(assert(loaded.price === 4, 'fromSaveData ripristina prezzo'));
+
+      // Test 18: clone
+      const cloned = product.clone();
+      results.push(assert(cloned.name === product.name, 'clone copia il nome'));
+      results.push(assert(cloned.price === product.price, 'clone copia il prezzo'));
+      results.push(assert(cloned !== product, 'clone crea una nuova istanza'));
+
+      document.getElementById('product-results').innerHTML = results.join('');
+    };
+
+    window.testShelf = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const shelf = new Shelf({
+        x: 100,
+        y: 200,
+        w: 120,
+        h: 40,
+        productIndex: 0
+      });
+      
+      results.push(assert(shelf.x === 100, 'X impostata correttamente'));
+      results.push(assert(shelf.y === 200, 'Y impostata correttamente'));
+      results.push(assert(shelf.w === 120, 'Width impostata correttamente'));
+      results.push(assert(shelf.h === 40, 'Height impostata correttamente'));
+      results.push(assert(shelf.productIndex === 0, 'ProductIndex impostato correttamente'));
+
+      // Test 2: getCenter
+      const center = shelf.getCenter();
+      results.push(assert(center.x === 160, 'Centro X calcolato (100+120/2=160)'));
+      results.push(assert(center.y === 220, 'Centro Y calcolato (200+40/2=220)'));
+
+      // Test 3: getRandomPoint
+      const randomPoint = shelf.getRandomPoint();
+      results.push(assert(randomPoint.x !== undefined, 'getRandomPoint ritorna X'));
+      results.push(assert(randomPoint.y !== undefined, 'getRandomPoint ritorna Y'));
+
+      // Test 4: contains
+      results.push(assert(shelf.contains(160, 220) === true, 'contains true per punto nel centro'));
+      results.push(assert(shelf.contains(50, 50) === false, 'contains false per punto fuori'));
+
+      // Test 5: distanceFrom
+      const dist = shelf.distanceFrom(160, 220);
+      results.push(assert(dist === 0, 'Distanza 0 dal centro'));
+
+      const dist2 = shelf.distanceFrom(160, 320);
+      results.push(assert(dist2 === 100, 'Distanza 100 da punto lontano'));
+
+      // Test 6: getNearestPoint
+      const nearest = shelf.getNearestPoint(50, 50);
+      results.push(assert(nearest.x === 100, 'Punto più vicino X clamped al bordo'));
+      results.push(assert(nearest.y === 200, 'Punto più vicino Y clamped al bordo'));
+
+      // Test 7: intersects
+      const shelf2 = new Shelf({ x: 150, y: 210, w: 100, h: 50, productIndex: 1 });
+      results.push(assert(shelf.intersects(shelf2) === true, 'intersects true per scaffali sovrapposti'));
+
+      const shelf3 = new Shelf({ x: 300, y: 300, w: 100, h: 50, productIndex: 2 });
+      results.push(assert(shelf.intersects(shelf3) === false, 'intersects false per scaffali distanti'));
+
+      // Test 8: getArea
+      const area = shelf.getArea();
+      results.push(assert(area === 4800, 'Area calcolata (120*40=4800)'));
+
+      // Test 9: getBounds
+      const bounds = shelf.getBounds();
+      results.push(assert(bounds.left === 100, 'Bounds left corretto'));
+      results.push(assert(bounds.right === 220, 'Bounds right corretto (100+120)'));
+      results.push(assert(bounds.top === 200, 'Bounds top corretto'));
+      results.push(assert(bounds.bottom === 240, 'Bounds bottom corretto (200+40)'));
+
+      // Test 10: moveTo
+      shelf.moveTo(300, 400);
+      results.push(assert(shelf.x === 300, 'moveTo cambia X'));
+      results.push(assert(shelf.y === 400, 'moveTo cambia Y'));
+
+      // Test 11: resize
+      shelf.resize(150, 60);
+      results.push(assert(shelf.w === 150, 'resize cambia width'));
+      results.push(assert(shelf.h === 60, 'resize cambia height'));
+
+      // Test 12: resize con valori troppo piccoli
+      shelf.resize(5, 5);
+      results.push(assert(shelf.w === 10, 'resize rispetta minimo width (10px)'));
+      results.push(assert(shelf.h === 10, 'resize rispetta minimo height (10px)'));
+
+      // Test 13: setProduct
+      shelf.setProduct(5);
+      results.push(assert(shelf.productIndex === 5, 'setProduct cambia productIndex'));
+
+      // Test 14: Serializzazione
+      const saveData = shelf.toSaveData();
+      results.push(assert(saveData.x === 300, 'toSaveData salva x'));
+      results.push(assert(saveData.productIndex === 5, 'toSaveData salva productIndex'));
+
+      const loaded = Shelf.fromSaveData(saveData);
+      results.push(assert(loaded.x === 300, 'fromSaveData ripristina x'));
+      results.push(assert(loaded.w === 10, 'fromSaveData ripristina width'));
+
+      // Test 15: clone
+      const cloned = shelf.clone();
+      results.push(assert(cloned.x === shelf.x, 'clone copia x'));
+      results.push(assert(cloned !== shelf, 'clone crea nuova istanza'));
+
+      // Test 16: createDefaultShelves
+      const defaultShelves = Shelf.createDefaultShelves();
+      results.push(assert(defaultShelves.length === 4, 'createDefaultShelves crea 4 scaffali'));
+      results.push(assert(defaultShelves[0] instanceof Shelf, 'Default shelves sono istanze di Shelf'));
+
+      document.getElementById('shelf-results').innerHTML = results.join('');
     };
 
     // Auto-run tutti i test all'apertura
