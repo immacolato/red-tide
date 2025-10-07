@@ -1,13 +1,13 @@
 /**
  * Client - Entità cliente del negozio
- * 
+ *
  * Rappresenta un cliente che entra nel negozio, si muove verso uno scaffale,
  * decide se comprare o meno, e poi esce.
- * 
+ *
  * Stati possibili:
  * - 'toShelf': Si sta muovendo verso uno scaffale
  * - 'leave': Sta uscendo dal negozio
- * 
+ *
  * @module entities/Client
  */
 
@@ -30,23 +30,23 @@ export class Client {
     this.y = options.y;
     this.vx = 0;
     this.vy = 0;
-    
+
     // Apparenza
     this.r = Config.CLIENT.BASE_RADIUS + Math.random() * Config.CLIENT.RADIUS_VARIANCE;
-    
+
     // Stato
     this.state = 'toShelf';
     this.timeAlive = 0;
-    
+
     // Target
     this.targetShelf = options.targetShelf;
     this.productIndex = options.productIndex;
-    
+
     // Comportamento
     this.mood = options.mood !== undefined ? options.mood : Math.random();
     this.patience = options.patience !== undefined ? options.patience : 10;
     this.speed = Config.CLIENT.BASE_SPEED + Math.random() * Config.CLIENT.SPEED_VARIANCE;
-    
+
     // Uscita
     this.exitChoice = null; // 'entrance' | 'emergency'
     this.leaveTimer = 0;
@@ -59,12 +59,12 @@ export class Client {
    */
   update(dt) {
     this.timeAlive += dt;
-    
+
     // Timeout massimo: dopo 120 secondi il cliente se ne va
     if (this.timeAlive > 120) {
       this.state = 'leave';
     }
-    
+
     return null;
   }
 
@@ -80,24 +80,24 @@ export class Client {
       this.state = 'leave';
       return { action: 'leave', reason: 'no_shelf' };
     }
-    
+
     const dist = Math.hypot(this.x - targetPos.x, this.y - targetPos.y);
-    
+
     // Perde pazienza (più veloce se prodotto esaurito)
-    const patienceLoss = (product && product.stock <= 0) ? dt * 1.5 : dt * 0.6;
+    const patienceLoss = product && product.stock <= 0 ? dt * 1.5 : dt * 0.6;
     this.patience -= patienceLoss;
-    
+
     // Pazienza finita
     if (this.patience <= 0) {
       this.state = 'leave';
       return { action: 'leave', reason: 'impatient' };
     }
-    
+
     // Raggiunto scaffale
     if (dist < 10) {
       return this.tryBuy(product);
     }
-    
+
     return { action: 'moving' };
   }
 
@@ -111,21 +111,21 @@ export class Client {
       this.state = 'leave';
       return { action: 'leave', reason: 'no_product' };
     }
-    
+
     // Stock esaurito
     if (product.stock <= 0) {
       this.state = 'leave';
-      return { 
-        action: 'leave', 
+      return {
+        action: 'leave',
         reason: 'out_of_stock',
-        satisfaction: -2 
+        satisfaction: -2,
       };
     }
-    
+
     // Calcola se il cliente è disposto a comprare
-    const willingness = (Math.random() * 1.5) * (1 + this.mood);
+    const willingness = Math.random() * 1.5 * (1 + this.mood);
     const wtp = (product.cost + product.price) * willingness; // Willingness To Pay
-    
+
     if (wtp >= product.price) {
       // Compra!
       this.state = 'leave';
@@ -133,7 +133,7 @@ export class Client {
         action: 'buy',
         product: product,
         profit: product.price - product.cost,
-        satisfaction: this.mood > 0.7 ? 2 : 1
+        satisfaction: this.mood > 0.7 ? 2 : 1,
       };
     } else {
       // Prezzo troppo alto
@@ -141,7 +141,7 @@ export class Client {
       return {
         action: 'leave',
         reason: 'price_too_high',
-        satisfaction: -1
+        satisfaction: -1,
       };
     }
   }
@@ -158,19 +158,18 @@ export class Client {
     if (!this.exitChoice) {
       this.exitChoice = Math.random() < 0.8 ? 'entrance' : 'emergency';
     }
-    
+
     // Timeout di sicurezza
     this.leaveTimer += dt;
     if (this.leaveTimer > 5) {
       return 'remove';
     }
-    
+
     // Controlla se è fuori dal canvas
-    if (this.x < -40 || this.x > canvasWidth + 40 || 
-        this.y < -40 || this.y > canvasHeight + 40) {
+    if (this.x < -40 || this.x > canvasWidth + 40 || this.y < -40 || this.y > canvasHeight + 40) {
       return 'remove';
     }
-    
+
     return null;
   }
 
@@ -183,20 +182,20 @@ export class Client {
   getExitTarget(canvasWidth, canvasHeight) {
     const W = canvasWidth;
     const H = canvasHeight;
-    
+
     if (this.exitChoice === 'entrance') {
       // Esci dall'area entrata (in basso a sinistra)
       const entranceX = 70;
       const entranceY = H - 40;
-      
+
       // Prima vai verso l'entrata, poi esci
       if (Math.hypot(this.x - entranceX, this.y - entranceY) > 30) {
         return { x: entranceX, y: entranceY };
       } else {
         // Esci dall'entrata
-        return { 
-          x: Math.random() < 0.5 ? -30 : 70, 
-          y: H + 30 
+        return {
+          x: Math.random() < 0.5 ? -30 : 70,
+          y: H + 30,
         };
       }
     } else {
@@ -205,9 +204,9 @@ export class Client {
       const distToRight = W - this.x;
       const distToTop = this.y;
       const distToBottom = H - this.y;
-      
+
       const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-      
+
       if (minDist === distToLeft) {
         return { x: -30, y: this.y };
       } else if (minDist === distToRight) {
@@ -231,14 +230,14 @@ export class Client {
     const dx = targetX - this.x;
     const dy = targetY - this.y;
     const dist = Math.hypot(dx, dy);
-    
+
     if (dist > 0.1) {
       const nx = dx / dist;
       const ny = dy / dist;
-      
+
       this.vx = nx * speed;
       this.vy = ny * speed;
-      
+
       this.x += this.vx * dt;
       this.y += this.vy * dt;
     }
@@ -291,7 +290,7 @@ export class Client {
       mood: data.mood,
       patience: data.patience,
     });
-    
+
     client.vx = data.vx;
     client.vy = data.vy;
     client.r = data.r;
@@ -300,7 +299,7 @@ export class Client {
     client.speed = data.speed;
     client.exitChoice = data.exitChoice;
     client.leaveTimer = data.leaveTimer;
-    
+
     return client;
   }
 }

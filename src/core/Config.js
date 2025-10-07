@@ -1,9 +1,9 @@
 /**
  * Config - Configurazioni e costanti del gioco
- * 
+ *
  * Centralizza tutte le configurazioni del gioco in un unico posto.
  * Questo rende facile bilanciare il gioco e modificare i parametri.
- * 
+ *
  * @module core/Config
  */
 
@@ -116,16 +116,17 @@ export const Config = {
     VERSION: 2,
   },
 
-  // Colori (per rendering futuro)
+  // Colori (tema scuro)
   COLORS: {
-    BACKGROUND: '#f5f5f0',
-    WALL: '#666',
-    SHELF: '#d4a574',
-    CLIENT_HAPPY: '#22bb44',
-    CLIENT_NEUTRAL: '#ffaa33',
+    BACKGROUND: '#0d2818',
+    WALL: '#1a4d3a',
+    SHELF: '#8b6f47',
+    CLIENT_HAPPY: '#00c851',
+    CLIENT_NEUTRAL: '#ffbb33',
     CLIENT_UNHAPPY: '#ff4444',
-    MONEY_POSITIVE: '#22bb44',
+    MONEY_POSITIVE: '#00c851',
     MONEY_NEGATIVE: '#ff4444',
+    TEXT: '#ffffff',
   },
 };
 
@@ -139,8 +140,12 @@ export const ConfigUtils = {
    * @returns {number} Costo per l'espansione
    */
   getExpansionCost(currentCap) {
-    const level = Math.floor((currentCap - Config.INITIAL_CLIENT_CAP) / Config.EXPANSION.CAP_INCREASE);
-    return Math.floor(Config.EXPANSION.INITIAL_COST * Math.pow(Config.EXPANSION.COST_MULTIPLIER, level));
+    const level = Math.floor(
+      (currentCap - Config.INITIAL_CLIENT_CAP) / Config.EXPANSION.CAP_INCREASE
+    );
+    return Math.floor(
+      Config.EXPANSION.INITIAL_COST * Math.pow(Config.EXPANSION.COST_MULTIPLIER, level)
+    );
   },
 
   /**
@@ -173,19 +178,19 @@ export const ConfigUtils = {
    */
   getBuyProbability(product, mood) {
     const markup = this.getMarkup(product);
-    
+
     // Prezzo troppo basso? Compra sempre
     if (markup < Config.PRICING.MIN_MARKUP) return 1.0;
-    
+
     // Prezzo ideale? Alta probabilità
     if (markup <= Config.PRICING.IDEAL_MARKUP) return 0.8 + mood * 0.2;
-    
+
     // Prezzo alto? Dipende dall'umore
     if (markup <= Config.PRICING.HIGH_MARKUP) return 0.4 + mood * 0.4;
-    
+
     // Prezzo molto alto? Bassa probabilità
     if (markup <= Config.PRICING.VERY_HIGH_MARKUP) return mood * 0.3;
-    
+
     // Prezzo eccessivo? Quasi impossibile
     return mood * 0.1;
   },

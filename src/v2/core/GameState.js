@@ -14,18 +14,18 @@ export class GameState {
     this.shelves = [];
     this.products = [];
     this.logLines = [];
-    
+
     // Sistema di soddisfazione
     this.satisfaction = 50; // 0-100
     this.satisfactionHistory = [];
-    
+
     // Sistema marketing
     this.marketingPower = 0; // 0-100
     this.maxMarketingPower = 0;
-    
+
     // Effetti visivi
     this.moneyEffects = [];
-    
+
     // Feedback
     this.lastPriceFeedback = 0;
   }
@@ -40,7 +40,7 @@ export class GameState {
       { x: 560, y: 180, w: 120, h: 40, productIndex: 2 },
       { x: 350, y: 340, w: 140, h: 40, productIndex: 3 },
     ];
-    
+
     this.products = [
       { name: 'Snack', price: 4, cost: 1.5, stock: 10 },
       { name: 'Bevanda', price: 3, cost: 0.8, stock: 10 },
@@ -101,17 +101,17 @@ export class GameState {
     this.time = saveData.time || 0;
     this.spawnInterval = saveData.spawnInterval || 2.0;
     this.clientCap = saveData.clientCap || 50;
-    
+
     if (saveData.version >= 2) {
       this.satisfaction = saveData.satisfaction || 50;
       this.marketingPower = saveData.marketingPower || 0;
       this.maxMarketingPower = saveData.maxMarketingPower || 0;
     }
-    
+
     if (saveData.products && saveData.products.length > 0) {
       this.products = saveData.products;
     }
-    
+
     if (saveData.shelves && saveData.shelves.length > 0) {
       this.shelves = saveData.shelves;
     }

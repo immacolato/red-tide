@@ -1,9 +1,9 @@
 /**
  * Shelf - Entità scaffale del negozio
- * 
+ *
  * Rappresenta uno scaffale fisico nel negozio che espone un prodotto.
  * Gestisce la posizione, dimensioni e il prodotto associato.
- * 
+ *
  * @module entities/Shelf
  */
 

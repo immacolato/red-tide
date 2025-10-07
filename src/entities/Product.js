@@ -1,11 +1,11 @@
 /**
  * Product - Entità prodotto del negozio
- * 
+ *
  * Rappresenta un prodotto venduto nel negozio con:
  * - Nome e prezzi (costo e vendita)
  * - Stock disponibile
  * - Calcoli automatici (profitto, markup)
- * 
+ *
  * @module entities/Product
  */
 

@@ -1,9 +1,9 @@
 /**
  * SaveManager - Gestione del salvataggio e caricamento del gioco
- * 
+ *
  * Questo modulo si occupa di salvare e caricare lo stato del gioco
  * utilizzando localStorage. Gestisce anche la compatibilità tra versioni.
- * 
+ *
  * @module core/SaveManager
  */
 
@@ -41,25 +41,26 @@ export class SaveManager {
     try {
       const saveStr = localStorage.getItem(SAVE_KEY);
       if (!saveStr) {
-        return false;
+        return null;
       }
-      
+
       const saveData = JSON.parse(saveStr);
-      
+
       // Verifica versione minima
       if (!saveData.version || saveData.version < 1) {
         this.gameState.addLog('⚠️ Salvataggio troppo vecchio, impossibile caricare');
-        return false;
+        return null;
       }
-      
-      // Carica i dati nello state
+
+      // Carica i dati base nello state
       this.gameState.fromSaveData(saveData);
-      this.gameState.addLog('✅ Gioco caricato');
-      return true;
+      
+      // Restituisce i dati completi per permettere la conversione in classi
+      return saveData;
     } catch (error) {
       console.error('Errore nel caricamento:', error);
       this.gameState.addLog('❌ Errore nel caricamento');
-      return false;
+      return null;
     }
   }
 
@@ -93,7 +94,7 @@ export class SaveManager {
     if (this.autosaveTimer) {
       this.stopAutosave();
     }
-    
+
     this.autosaveTimer = setInterval(() => {
       this.save();
     }, AUTOSAVE_INTERVAL);
@@ -131,8 +132,8 @@ export class SaveManager {
       this.gameState.addLog('📥 Salvataggio importato');
       return true;
     } catch (error) {
-      console.error('Errore nell\'importazione:', error);
-      this.gameState.addLog('❌ Errore nell\'importazione');
+      console.error("Errore nell'importazione:", error);
+      this.gameState.addLog("❌ Errore nell'importazione");
       return false;
     }
   }
