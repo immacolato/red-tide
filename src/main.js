@@ -458,6 +458,32 @@ function renderItemsPanel() {
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Calcola la posizione per un nuovo scaffale
+ * @param {number} shelfCount - Numero totale di scaffali
+ * @returns {object} Posizione {x, y}
+ */
+function calculateNewShelfPosition(shelfCount) {
+  // Layout a griglia: 3 colonne
+  const cols = 3;
+  const startX = 280;
+  const startY = 180;
+  const spacingX = 140;
+  const spacingY = 100;
+  
+  const col = (shelfCount - 4) % cols;
+  const row = Math.floor((shelfCount - 4) / cols) + 2; // Parte dalla riga 2
+  
+  return {
+    x: startX + col * spacingX,
+    y: startY + row * spacingY,
+  };
+}
+
+// ============================================================================
 // EVENT LISTENERS
 // ============================================================================
 
@@ -519,7 +545,32 @@ function setupEventListeners() {
 
       if (gameState.spendMoney(cost)) {
         gameState.clientCap += Config.EXPANSION.CAP_INCREASE;
-        gameState.addLog(`🏗️ Negozio espanso! Capacità → ${gameState.clientCap} (€${cost})`);
+        
+        // Aggiungi nuovo scaffale con prodotto
+        const expansionIndex = gameState.shelves.length - 4; // Numero di espansioni fatte
+        if (expansionIndex < Config.EXPANSION_PRODUCTS.length) {
+          const newProductData = Config.EXPANSION_PRODUCTS[expansionIndex];
+          const newProduct = new Product(newProductData);
+          const newProductIndex = gameState.products.length;
+          gameState.products.push(newProduct);
+          
+          // Calcola posizione per il nuovo scaffale
+          const shelfPosition = calculateNewShelfPosition(gameState.shelves.length);
+          const newShelf = new Shelf({
+            x: shelfPosition.x,
+            y: shelfPosition.y,
+            w: 120,
+            h: 40,
+            productIndex: newProductIndex,
+          });
+          gameState.shelves.push(newShelf);
+          
+          gameState.addLog(`🏗️ Negozio espanso! +${newProduct.name} • Capacità → ${gameState.clientCap} (€${cost})`);
+        } else {
+          gameState.addLog(`🏗️ Negozio espanso! Capacità → ${gameState.clientCap} (€${cost})`);
+        }
+        
+        renderItemsPanel();
         updateHUD();
       } else {
         gameState.addLog('❌ Denaro insufficiente per espansione');

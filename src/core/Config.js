@@ -19,7 +19,19 @@ export const Config = {
     { name: 'Snack', price: 4, cost: 1.5, stock: 10 },
     { name: 'Bevanda', price: 3, cost: 0.8, stock: 10 },
     { name: 'Gadget', price: 8, cost: 4, stock: 6 },
-    { name: 'Libretto', price: 6, cost: 2.5, stock: 8 },
+    { name: 'Il capitale - Karl Marx', price: 6, cost: 2.5, stock: 8 },
+  ],
+
+  // Prodotti sbloccabili con l'espansione
+  EXPANSION_PRODUCTS: [
+    { name: 'Caramelle', price: 2, cost: 0.6, stock: 10 },
+    { name: 'Rivista', price: 5, cost: 1.8, stock: 8 },
+    { name: 'Giocattolo', price: 12, cost: 5, stock: 5 },
+    { name: 'Penna', price: 3, cost: 1, stock: 10 },
+    { name: 'Quaderno', price: 7, cost: 2.5, stock: 8 },
+    { name: 'Auricolari', price: 15, cost: 6, stock: 4 },
+    { name: 'Power Bank', price: 25, cost: 10, stock: 3 },
+    { name: 'Portachiavi', price: 4, cost: 1.2, stock: 10 },
   ],
 
   // Configurazione scaffali di default
@@ -86,6 +98,7 @@ export const Config = {
     INITIAL_COST: 100,
     COST_MULTIPLIER: 1.5,
     CAP_INCREASE: 10,
+    ADD_SHELF: true, // Se aggiungere uno scaffale ad ogni espansione
   },
 
   // Rifornimento
