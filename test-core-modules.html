@@ -89,11 +89,18 @@
     <div id="client-results"></div>
   </div>
 
+  <div class="test-section">
+    <h2>Test SpawnSystem</h2>
+    <button onclick="testSpawnSystem()">Esegui Test SpawnSystem</button>
+    <div id="spawnsystem-results"></div>
+  </div>
+
   <script type="module">
     import { GameState } from './src/core/GameState.js';
     import { SaveManager } from './src/core/SaveManager.js';
     import { Config, ConfigUtils } from './src/core/Config.js';
     import { Client } from './src/entities/Client.js';
+    import { SpawnSystem } from './src/systems/SpawnSystem.js';
 
     // Rendi disponibili globalmente per i bottoni
     window.GameState = GameState;
@@ -101,6 +108,7 @@
     window.Config = Config;
     window.ConfigUtils = ConfigUtils;
     window.Client = Client;
+    window.SpawnSystem = SpawnSystem;
 
     function assert(condition, message) {
       if (condition) {
@@ -453,6 +461,139 @@
       results.push(assert(removeResult2 === 'remove', 'Cliente rimosso quando esce dal canvas'));
 
       document.getElementById('client-results').innerHTML = results.join('');
+    };
+
+    window.testSpawnSystem = function() {
+      const results = [];
+      
+      // Setup: crea GameState e SpawnSystem
+      const state = new GameState();
+      state.initShop();
+      const spawnSystem = new SpawnSystem(state);
+
+      // Test 1: Inizializzazione
+      results.push(assert(spawnSystem.gameState === state, 'SpawnSystem collegato al GameState'));
+      results.push(assert(spawnSystem.spawnTimer === 0, 'Timer inizializzato a 0'));
+
+      // Test 2: getSpawnPosition
+      const pos1 = spawnSystem.getSpawnPosition(800, 600);
+      results.push(assert(pos1.x !== undefined && pos1.y !== undefined, 'getSpawnPosition ritorna posizione valida'));
+      results.push(assert(pos1.y === 610 || pos1.y > 520, 'Spawn position nell\'area entrata (basso o sinistra)'));
+
+      // Test 3: calculateClientMood - soddisfazione alta
+      state.satisfaction = 80;
+      state.clients = [];
+      const moodHigh = spawnSystem.calculateClientMood();
+      results.push(assert(moodHigh > 0.5, `Mood alto con satisfaction 80 (mood: ${moodHigh.toFixed(2)})`));
+
+      // Test 4: calculateClientMood - soddisfazione bassa
+      state.satisfaction = 20;
+      const moodLow = spawnSystem.calculateClientMood();
+      results.push(assert(moodLow < moodHigh, 'Mood più basso con satisfaction bassa'));
+
+      // Test 5: calculateClientPatience - negozio vuoto
+      state.clients = [];
+      state.clientCap = 50;
+      const patienceEmpty = spawnSystem.calculateClientPatience();
+      results.push(assert(patienceEmpty >= Config.CLIENT.BASE_PATIENCE_MIN, 'Pazienza minima rispettata'));
+      results.push(assert(patienceEmpty <= Config.CLIENT.BASE_PATIENCE_MAX, 'Pazienza massima rispettata'));
+
+      // Test 6: calculateClientPatience - negozio affollato
+      state.clients = new Array(40).fill({}); // 40/50 = 80% pieno
+      const patienceCrowded = spawnSystem.calculateClientPatience();
+      results.push(assert(patienceCrowded < patienceEmpty, 'Pazienza ridotta con affollamento'));
+
+      // Test 7: getMarketingFactor
+      state.marketingPower = 0;
+      const marketingMin = spawnSystem.getMarketingFactor();
+      results.push(assert(marketingMin === 0.5, 'Marketing factor minimo = 0.5'));
+
+      state.marketingPower = 100;
+      const marketingMax = spawnSystem.getMarketingFactor();
+      results.push(assert(marketingMax === 2.0, 'Marketing factor massimo = 2.0'));
+
+      // Test 8: getSatisfactionFactor
+      state.satisfaction = 0;
+      const satMin = spawnSystem.getSatisfactionFactor();
+      results.push(assert(satMin === 0.3, 'Satisfaction factor minimo = 0.3'));
+
+      state.satisfaction = 100;
+      const satMax = spawnSystem.getSatisfactionFactor();
+      results.push(assert(satMax === 1.5, 'Satisfaction factor massimo = 1.5'));
+
+      // Test 9: getPriceAttractiveness - prezzi bassi
+      state.products = [
+        { name: 'Test1', price: 3, cost: 2, stock: 10 }, // markup = 0.5 (50%)
+      ];
+      const priceAttrLow = spawnSystem.getPriceAttractiveness();
+      results.push(assert(priceAttrLow > 0.7, `Prezzi bassi = alta attrattività (${priceAttrLow.toFixed(2)})`));
+
+      // Test 10: getPriceAttractiveness - prezzi alti
+      state.products = [
+        { name: 'Test1', price: 10, cost: 2, stock: 10 }, // markup = 4.0 (400%)
+      ];
+      const priceAttrHigh = spawnSystem.getPriceAttractiveness();
+      results.push(assert(priceAttrHigh < 0.5, `Prezzi alti = bassa attrattività (${priceAttrHigh.toFixed(2)})`));
+
+      // Test 11: getSpawnMultiplier - condizioni pessime
+      state.marketingPower = 0;
+      state.satisfaction = 0;
+      state.products = [{ name: 'Test', price: 20, cost: 2, stock: 10 }];
+      const multMin = spawnSystem.getSpawnMultiplier();
+      results.push(assert(multMin < 0.3, `Spawn multiplier basso con condizioni pessime (${multMin.toFixed(2)})`));
+
+      // Test 12: getSpawnMultiplier - condizioni ottime
+      state.marketingPower = 100;
+      state.satisfaction = 100;
+      state.products = [{ name: 'Test', price: 3, cost: 2, stock: 10 }];
+      const multMax = spawnSystem.getSpawnMultiplier();
+      results.push(assert(multMax > 2.0, `Spawn multiplier alto con condizioni ottime (${multMax.toFixed(2)})`));
+
+      // Test 13: spawnClient
+      state.clients = [];
+      state.satisfaction = 50;
+      const client = spawnSystem.spawnClient(800, 600);
+      results.push(assert(client !== null, 'spawnClient crea un cliente'));
+      results.push(assert(state.clients.length === 1, 'Cliente aggiunto alla lista'));
+      results.push(assert(client instanceof Client, 'Cliente è istanza di Client'));
+
+      // Test 14: spawnClient con targetShelf
+      results.push(assert(client.targetShelf !== undefined, 'Cliente ha targetShelf'));
+      results.push(assert(client.productIndex >= 0 && client.productIndex < state.products.length, 'ProductIndex valido'));
+
+      // Test 15: update - spawn nel tempo
+      state.clients = [];
+      state.satisfaction = 80;
+      state.marketingPower = 50;
+      state.spawnInterval = 2.0;
+      spawnSystem.reset();
+      
+      // Simula 3 secondi con update multipli
+      const updates = 30; // 30 update da 0.1s = 3 secondi
+      for (let i = 0; i < updates; i++) {
+        spawnSystem.update(0.1, 800, 600);
+      }
+      
+      results.push(assert(state.clients.length > 0, `Clienti spawati dopo 3 secondi (${state.clients.length} clienti)`));
+
+      // Test 16: update - rispetta clientCap
+      state.clients = new Array(state.clientCap).fill({});
+      const beforeCount = state.clients.length;
+      spawnSystem.update(10, 800, 600); // Forza spawn
+      results.push(assert(state.clients.length === beforeCount, 'Non spawna oltre clientCap'));
+
+      // Test 17: getStats
+      const stats = spawnSystem.getStats();
+      results.push(assert(stats.spawnMultiplier !== undefined, 'getStats ritorna spawnMultiplier'));
+      results.push(assert(stats.marketingFactor !== undefined, 'getStats ritorna marketingFactor'));
+      results.push(assert(stats.priceFactor !== undefined, 'getStats ritorna priceFactor'));
+
+      // Test 18: reset
+      spawnSystem.spawnTimer = 5.0;
+      spawnSystem.reset();
+      results.push(assert(spawnSystem.spawnTimer === 0, 'reset azzera il timer'));
+
+      document.getElementById('spawnsystem-results').innerHTML = results.join('');
     };
 
     // Auto-run tutti i test all'apertura
