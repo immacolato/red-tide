@@ -18,11 +18,18 @@ export class SaveManager {
 
   /**
    * Salva il gioco su localStorage
+   * @param {PhaseManager} phaseManager - Opzionale: PhaseManager da salvare
    * @returns {boolean} true se il salvataggio è riuscito
    */
-  save() {
+  save(phaseManager = null) {
     try {
       const saveData = this.gameState.toSaveData();
+      
+      // Aggiungi i dati del PhaseManager se fornito
+      if (phaseManager) {
+        saveData.phaseManager = phaseManager.toSaveData();
+      }
+      
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
       this.gameState.addLog('💾 Gioco salvato');
       return true;
@@ -35,9 +42,10 @@ export class SaveManager {
 
   /**
    * Carica il gioco da localStorage
+   * @param {PhaseManager} phaseManager - Opzionale: PhaseManager da aggiornare
    * @returns {boolean} true se il caricamento è riuscito
    */
-  load() {
+  load(phaseManager = null) {
     try {
       const saveStr = localStorage.getItem(SAVE_KEY);
       if (!saveStr) {
@@ -54,6 +62,11 @@ export class SaveManager {
 
       // Carica i dati base nello state
       this.gameState.fromSaveData(saveData);
+      
+      // Carica i dati del PhaseManager se fornito
+      if (phaseManager && saveData.phaseManager) {
+        phaseManager.fromSaveData(saveData.phaseManager);
+      }
       
       // Restituisce i dati completi per permettere la conversione in classi
       return saveData;

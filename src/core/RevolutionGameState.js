@@ -326,6 +326,7 @@ export class RevolutionGameState {
       goalReached: this.goalReached,
       spawnInterval: this.spawnInterval,
       capacity: this.capacity,
+      citizenCap: this.citizenCap,
       consciousness: this.consciousness,
       assemblyPower: this.assemblyPower,
       assemblyLevel: this.assemblyLevel,
@@ -351,6 +352,7 @@ export class RevolutionGameState {
     this.goalReached = saveData.goalReached || false;
     this.spawnInterval = saveData.spawnInterval || RevolutionConfig.INITIAL_SPAWN_INTERVAL;
     this.capacity = saveData.capacity || RevolutionConfig.INITIAL_CAPACITY;
+    this.citizenCap = saveData.citizenCap || 15;
     this.consciousness = saveData.consciousness || RevolutionConfig.INITIAL_CONSCIOUSNESS;
     this.assemblyPower = saveData.assemblyPower || 0;
     this.assemblyLevel = saveData.assemblyLevel || 0;

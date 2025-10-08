@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<title>Test Simple</title>
+<style>
+  body { background: #0a0a0a; color: #fff; font-family: monospace; padding: 20px; }
+  #output { background: #1a1a1a; padding: 20px; border-radius: 8px; white-space: pre-wrap; }
+  .error { color: #e74c3c; }
+  .success { color: #27ae60; }
+</style>
+</head>
+<body>
+<h1>🧪 Test Minimo</h1>
+<div id="output"></div>
+
+<script type="module">
+  const output = document.getElementById('output');
+  
+  function log(msg, isError = false) {
+    const line = document.createElement('div');
+    line.className = isError ? 'error' : 'success';
+    line.textContent = (isError ? '❌ ' : '✅ ') + msg;
+    output.appendChild(line);
+    console.log(msg);
+  }
+  
+  async function test() {
+    try {
+      log('Test started');
+      
+      // Test 1: Import RevolutionGameState
+      log('Importing RevolutionGameState...');
+      const { RevolutionGameState } = await import('./src/core/RevolutionGameState.js');
+      log('RevolutionGameState imported');
+      
+      // Test 2: Create instance
+      log('Creating RevolutionGameState instance...');
+      const gameState = new RevolutionGameState();
+      log(`Instance created: influence=${gameState.influence}`);
+      
+      // Test 3: Import PhaseManager
+      log('Importing PhaseManager...');
+      const { PhaseManager } = await import('./src/core/PhaseManager.js');
+      log('PhaseManager imported');
+      
+      // Test 4: Create PhaseManager
+      log('Creating PhaseManager...');
+      const phaseManager = new PhaseManager(gameState);
+      log('PhaseManager created');
+      
+      // Test 5: Initialize phase
+      log('Initializing phase 1...');
+      phaseManager.initPhase(1);
+      log('Phase initialized');
+      
+      // Test 6: Get current phase
+      log('Getting current phase...');
+      const phase = phaseManager.getCurrentPhase();
+      log(`Phase name: ${phase.name}`);
+      log(`Phase topics count: ${phase.topics.length}`);
+      log(`Phase comrades count: ${phase.comrades.length}`);
+      
+      // Test 7: Import Topic
+      log('Importing Topic...');
+      const { Topic } = await import('./src/entities/Topic.js');
+      log('Topic imported');
+      
+      // Test 8: Create topics
+      log('Creating topics from phase config...');
+      const topics = phase.topics.map(topicData =>
+        new Topic({
+          id: topicData.id,
+          name: topicData.name,
+          cost: topicData.cost,
+          appeal: topicData.appeal,
+          difficulty: topicData.difficulty,
+          impact: topicData.impact,
+          stock: 10,
+        })
+      );
+      log(`Created ${topics.length} topics`);
+      topics.forEach(t => log(`  - ${t.name} (cost: ${t.cost})`));
+      
+      // Test 9: Import InfoDesk
+      log('Importing InfoDesk...');
+      const { InfoDesk } = await import('./src/entities/InfoDesk.js');
+      log('InfoDesk imported');
+      
+      // Test 10: Create desks
+      log('Creating default info desks...');
+      const desks = InfoDesk.createDefaultDesks();
+      log(`Created ${desks.length} desks`);
+      
+      // Test 11: Import Comrade
+      log('Importing Comrade...');
+      const { Comrade } = await import('./src/entities/Comrade.js');
+      log('Comrade imported');
+      
+      // Test 12: Create a comrade
+      log('Creating test comrade...');
+      const comradeData = phase.comrades[0];
+      const comrade = new Comrade({
+        type: comradeData.id,
+        name: comradeData.name,
+        cost: comradeData.cost,
+        upkeep: comradeData.upkeep,
+        effect: comradeData.effect,
+      });
+      log(`Comrade created: ${comrade.name}`);
+      log(`  Effect: ${comrade.getEffectDescription()}`);
+      
+      log('');
+      log('🎉 ALL TESTS PASSED!');
+      
+    } catch (error) {
+      log('CRITICAL ERROR: ' + error.message, true);
+      log('Stack: ' + error.stack, true);
+      console.error('Full error:', error);
+    }
+  }
+  
+  test();
+</script>
+</body>
+</html>

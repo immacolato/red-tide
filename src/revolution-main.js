@@ -284,7 +284,7 @@ function initGame() {
         }
       }
       
-      const saveData = saveManager.load();
+      const saveData = saveManager.load(phaseManager);
       if (saveData) {
         // Verifica che il salvataggio sia compatibile
         if (!saveData.topics || !saveData.topics[0] || !saveData.topics[0].id) {
@@ -312,6 +312,14 @@ function initGame() {
           if (saveData.currentPhase) {
             phaseManager.initPhase(saveData.currentPhase);
           }
+          
+          // Sincronizza il contatore di conversioni del PhaseManager con il GameState
+          // Questo è importante per mantenere coerenti le statistiche di fase
+          if (phaseManager.converts === 0 && gameState.totalConverts > 0) {
+            phaseManager.converts = gameState.totalConverts;
+            phaseManager.goalProgress = gameState.totalConverts;
+          }
+          
           gameState.addLog('✅ Rivoluzione caricata');
         }
       }
@@ -495,7 +503,7 @@ function handleConversion(citizen, topic, desk) {
   updateHUD();
 
   // Salva occasionalmente
-  if (Math.random() < 0.15) saveManager.save();
+  if (Math.random() < 0.15) saveManager.save(phaseManager);
 }
 
 function handleCitizenLeavingWithReason(citizen, result) {
@@ -1151,7 +1159,7 @@ function setupEventListeners() {
   const saveBtn = document.getElementById('save-game');
   if (saveBtn) {
     saveBtn.onclick = () => {
-      saveManager.save();
+      saveManager.save(phaseManager);
       gameState.addLog('💾 Rivoluzione salvata!');
     };
   }
