@@ -575,20 +575,22 @@ function render() {
 
     // Label topic - layout migliorato per desk 220x80
     if (topic) {
-      // PARTE SUPERIORE: Icon + Nome ben spaziati
-      const iconX = desk.x + 30;
-      const nameX = desk.x + desk.w / 2 + 25;
-      const titleY = desk.y + 32;
+      // PARTE SUPERIORE: Icon + Nome allineati a sinistra
+      const iconX = desk.x + 12;
+      const nameX = desk.x + 48; // Dopo l'icona
+      const titleY = desk.y + 30;
       
-      // Icona più grande a sinistra
-      ctx.font = '32px sans-serif';
+      // Icona a sinistra
+      ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(topic.icon, iconX, titleY);
       
-      // Nome in grassetto, più grande e leggibile
+      // Nome in grassetto, più piccolo ma leggibile, allineato a sinistra
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px sans-serif';
-      ctx.textAlign = 'center';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'left';
+      
+      // Mostra il nome completo senza troncamento
       ctx.fillText(topic.name, nameX, titleY);
 
       // PARTE INFERIORE: Barra stock ridisegnata
@@ -639,10 +641,10 @@ function render() {
       ctx.fillStyle = '#ffffff';
       ctx.fillText(`${topic.stock}`, barX + barW / 2, barY + 14);
 
-      // PULSANTE + sopra il desk (fluttuante)
+      // PULSANTE + sopra il desk (fluttuante) - più in alto per non coprire testo
       const btnSize = 36;
       const btnX = desk.x + desk.w - btnSize / 2 - 10;
-      const btnY = desk.y - btnSize / 2;
+      const btnY = desk.y - btnSize - 4; // Spostato più in alto (era -btnSize/2)
       const btnRadius = 8;
       
       // Ombra pulsante più pronunciata
@@ -984,12 +986,12 @@ function setupEventListeners() {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
-      // Check se si clicca sul pulsante + di un desk (ora sopra il desk)
+      // Check se si clicca sul pulsante + di un desk (ora più in alto)
       for (let i = 0; i < gameState.infoDesks.length; i++) {
         const desk = gameState.infoDesks[i];
         const btnSize = 36;
         const btnX = desk.x + desk.w - btnSize / 2 - 10;
-        const btnY = desk.y - btnSize / 2;
+        const btnY = desk.y - btnSize - 4; // Aggiornato per corrispondere alla nuova posizione
 
         if (clickX >= btnX && clickX <= btnX + btnSize && 
             clickY >= btnY && clickY <= btnY + btnSize) {
