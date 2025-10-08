@@ -196,11 +196,15 @@ const rnd = (a, b) => Math.random() * (b - a) + a;
 // ============================================================================
 
 function initGame() {
+  console.log('🚀 Initializing game...');
+  
   // Inizializza la fase 1
   phaseManager.initPhase(1);
+  console.log('✅ Phase initialized');
 
   // Crea i topic dalla configurazione
   const phase = phaseManager.getCurrentPhase();
+  console.log('✅ Got current phase:', phase);
   gameState.topics = phase.topics.map(
     topicData =>
       new Topic({
@@ -248,10 +252,16 @@ function initGame() {
   saveManager.startAutosave();
 
   // Setup UI
+  console.log('🎨 Setting up UI...');
   setupEventListeners();
+  console.log('✅ Event listeners setup');
   renderTopicsPanel();
+  console.log('✅ Topics panel rendered');
   renderComradesPanel();
+  console.log('✅ Comrades panel rendered');
   updateHUD();
+  console.log('✅ HUD updated');
+  console.log('🎉 Game initialized successfully!');
 }
 
 // ============================================================================

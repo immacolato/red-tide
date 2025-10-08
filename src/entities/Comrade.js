@@ -1,34 +1,39 @@
 /**
  * Comrade - Rappresenta un compagno assunto (volontario, organizzatore, educatore)
- * 
+ *
  * I compagni forniscono boost passivi e automazione di alcune meccaniche.
- * 
+ *
  * @module entities/Comrade
  */
 
 export class Comrade {
   /**
-   * @param {object} config - Configurazione del compagno dalla fase
+   * @param {object} config - Configurazione del compagno
    * @param {number} hireTime - Quando è stato assunto
    */
   constructor(config, hireTime = 0) {
-    this.id = config.id;
+    this.type = config.type || config.id;
     this.name = config.name;
-    this.icon = config.icon;
-    this.description = config.description;
-    
+    this.icon = config.icon || '';
+    this.description = config.description || '';
+
     // Costi
-    this.hireCost = config.cost;
+    this.cost = config.cost;
     this.upkeep = config.upkeep || 0;
-    
+
     // Effetto
-    this.effectType = config.effect.type;
-    this.effectValue = config.effect.value;
-    
+    if (config.effect) {
+      this.effectType = config.effect.type;
+      this.effectValue = config.effect.value;
+    } else {
+      this.effectType = 'none';
+      this.effectValue = 0;
+    }
+
     // Stato
     this.hireTime = hireTime;
     this.active = true;
-    
+
     // Accumulator per effetti al secondo
     this.accumulator = 0;
   }
@@ -40,20 +45,20 @@ export class Comrade {
    */
   update(dt) {
     if (!this.active) return null;
-    
+
     this.accumulator += dt;
-    
+
     // Applica effetti ogni secondo
     if (this.accumulator >= 1.0) {
       this.accumulator -= 1.0;
-      
+
       return {
         type: this.effectType,
         value: this.effectValue,
         upkeep: this.upkeep,
       };
     }
-    
+
     return null;
   }
 
@@ -65,11 +70,27 @@ export class Comrade {
   }
 
   /**
+   * Ottiene la descrizione dell'effetto
+   */
+  getEffectDescription() {
+    switch (this.effectType) {
+      case 'auto_restock':
+        return `Auto-rifornisce ogni ${this.effectValue}s`;
+      case 'consciousness_boost':
+        return `+${this.effectValue} coscienza ogni 8s`;
+      case 'conversion_boost':
+        return `+${this.effectValue}% probabilità conversione`;
+      default:
+        return 'Effetto sconosciuto';
+    }
+  }
+
+  /**
    * Ottiene statistiche del compagno
    */
   getStats() {
     return {
-      id: this.id,
+      type: this.type,
       name: this.name,
       icon: this.icon,
       description: this.description,
@@ -86,7 +107,14 @@ export class Comrade {
    */
   toSaveData() {
     return {
-      id: this.id,
+      type: this.type,
+      name: this.name,
+      cost: this.cost,
+      upkeep: this.upkeep,
+      effect: {
+        type: this.effectType,
+        value: this.effectValue,
+      },
       hireTime: this.hireTime,
       active: this.active,
     };
@@ -95,10 +123,18 @@ export class Comrade {
   /**
    * Crea un Comrade da dati salvati
    * @param {object} data - Dati salvati
-   * @param {object} config - Configurazione dalla fase
    */
-  static fromSaveData(data, config) {
-    const comrade = new Comrade(config, data.hireTime);
+  static fromSaveData(data) {
+    const comrade = new Comrade(
+      {
+        type: data.type,
+        name: data.name,
+        cost: data.cost,
+        upkeep: data.upkeep,
+        effect: data.effect,
+      },
+      data.hireTime
+    );
     comrade.active = data.active !== false;
     return comrade;
   }

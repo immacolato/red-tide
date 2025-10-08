@@ -25,13 +25,23 @@ export class PhaseManager {
   }
 
   /**
-   * Inizializza la fase corrente
+   * Inizializza una fase specifica
+   * @param {number} phaseNumber - Numero della fase (opzionale, usa currentPhase se non specificato)
    */
-  initPhase() {
+  initPhase(phaseNumber = null) {
+    if (phaseNumber !== null) {
+      this.currentPhase = phaseNumber;
+      this.gameState.currentPhase = phaseNumber;
+    }
+    
     this.phaseConfig = RevolutionUtils.getPhaseConfig(this.currentPhase);
     this.phaseStartTime = this.gameState.time;
     this.goalProgress = 0;
     this.goalTarget = this.phaseConfig.goal.target;
+    
+    // Reset counters for new phase
+    this.converts = 0;
+    this.totalInfluenceGained = 0;
     
     this.gameState.addLog(`🚩 ${this.phaseConfig.name.toUpperCase()}`);
     this.gameState.addLog(`📋 Obiettivo: ${this.phaseConfig.goal.description}`);
@@ -116,6 +126,13 @@ export class PhaseManager {
    * Ottiene la configurazione della fase corrente
    */
   getPhaseConfig() {
+    return this.phaseConfig;
+  }
+
+  /**
+   * Alias per getPhaseConfig (per compatibilità)
+   */
+  getCurrentPhase() {
     return this.phaseConfig;
   }
 
