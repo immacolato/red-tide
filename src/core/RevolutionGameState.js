@@ -11,7 +11,8 @@ import { RevolutionConfig } from './RevolutionConfig.js';
 export class RevolutionGameState {
   constructor() {
     // Risorse
-    this.influence = RevolutionConfig.INITIAL_INFLUENCE;
+    this.money = 20; // € - Per comprare tematiche (donazioni affiliati) - ridotto da 50
+    this.influence = RevolutionConfig.INITIAL_INFLUENCE; // ⚡ - Per assumere compagni e azioni
     this.time = 0;
 
     // Fase corrente
@@ -22,6 +23,7 @@ export class RevolutionGameState {
     this.spawnInterval = RevolutionConfig.INITIAL_SPAWN_INTERVAL;
     this.spawnTimer = 0;
     this.capacity = RevolutionConfig.INITIAL_CAPACITY;
+    this.citizenCap = 15; // Limite massimo cittadini attivi
 
     // Entità
     this.citizens = [];
@@ -41,6 +43,12 @@ export class RevolutionGameState {
     // Tracking conversioni
     this.totalConverts = 0;
     this.convertsByType = {}; // {student: 5, worker: 3, ...}
+    this.convertsByReceptivity = {
+      receptive: 0,
+      neutral: 0,
+      skeptical: 0
+    };
+    this.totalAttempts = 0; // Per calcolare success rate
 
     // Effetti visivi
     this.influenceEffects = []; // Effetti visivi di influenza
@@ -69,10 +77,40 @@ export class RevolutionGameState {
   }
 
   /**
-   * Aggiorna il tempo
+   * Aggiunge denaro (€)
    */
-  updateTime(deltaTime) {
-    this.time += deltaTime;
+  addMoney(amount) {
+    this.money += amount;
+  }
+
+  /**
+   * Spende denaro (€)
+   * @returns {boolean} True se riesce
+   */
+  spendMoney(amount) {
+    if (this.money >= amount) {
+      this.money -= amount;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Aggiorna il tempo di gioco
+   */
+  updateTime(dt) {
+    this.time += dt;
+    
+    // Donazioni passive dai convertiti (ogni 10 secondi)
+    this.donationTimer = (this.donationTimer || 0) + dt;
+    if (this.donationTimer >= 10.0) {
+      this.donationTimer = 0;
+      const donationAmount = Math.floor(this.totalConverts * 0.3); // 0.3€ per convertito ogni 10s
+      if (donationAmount > 0) {
+        this.addMoney(donationAmount);
+        this.addLog(`💰 Donazioni: +${donationAmount}€ (${this.totalConverts} compagni)`);
+      }
+    }
   }
 
   /**
@@ -136,13 +174,29 @@ export class RevolutionGameState {
   /**
    * Registra una conversione
    */
-  registerConvert(citizenType) {
+  registerConvert(citizenType, receptivity) {
     this.totalConverts++;
     
     if (!this.convertsByType[citizenType.id]) {
       this.convertsByType[citizenType.id] = 0;
     }
     this.convertsByType[citizenType.id]++;
+    
+    // Track by receptivity level
+    if (receptivity >= 0.7) {
+      this.convertsByReceptivity.receptive++;
+    } else if (receptivity >= 0.4) {
+      this.convertsByReceptivity.neutral++;
+    } else {
+      this.convertsByReceptivity.skeptical++;
+    }
+  }
+  
+  /**
+   * Registra un tentativo di conversione
+   */
+  registerAttempt() {
+    this.totalAttempts++;
   }
 
   /**
@@ -239,16 +293,24 @@ export class RevolutionGameState {
    * Ottiene statistiche per UI
    */
   getStats() {
+    const successRate = this.totalAttempts > 0 
+      ? ((this.totalConverts / this.totalAttempts) * 100).toFixed(0)
+      : 0;
+    
     return {
+      money: this.money,
       influence: this.influence.toFixed(0),
       time: this.time.toFixed(0),
       citizens: this.citizens.length,
+      citizenCap: this.citizenCap,
       capacity: this.capacity,
       consciousness: this.consciousness.toFixed(0),
       assemblyPower: this.assemblyPower.toFixed(0),
       totalConverts: this.totalConverts,
       phase: this.currentPhase,
       comradesCount: this.comrades.length,
+      convertsByReceptivity: this.convertsByReceptivity,
+      successRate: successRate,
     };
   }
 
@@ -257,6 +319,7 @@ export class RevolutionGameState {
    */
   toSaveData() {
     return {
+      money: this.money,
       influence: this.influence,
       time: this.time,
       currentPhase: this.currentPhase,
@@ -268,6 +331,8 @@ export class RevolutionGameState {
       assemblyLevel: this.assemblyLevel,
       totalConverts: this.totalConverts,
       convertsByType: this.convertsByType,
+      convertsByReceptivity: this.convertsByReceptivity,
+      totalAttempts: this.totalAttempts,
       topics: this.topics.map(t => t.toSaveData()),
       infoDesks: this.infoDesks.map(d => d.toSaveData()),
       comrades: this.comrades.map(c => c.toSaveData()),
@@ -279,6 +344,7 @@ export class RevolutionGameState {
    * Carica da salvataggio
    */
   fromSaveData(saveData) {
+    this.money = saveData.money || 20;
     this.influence = saveData.influence || RevolutionConfig.INITIAL_INFLUENCE;
     this.time = saveData.time || 0;
     this.currentPhase = saveData.currentPhase || RevolutionConfig.INITIAL_PHASE;
@@ -290,18 +356,26 @@ export class RevolutionGameState {
     this.assemblyLevel = saveData.assemblyLevel || 0;
     this.totalConverts = saveData.totalConverts || 0;
     this.convertsByType = saveData.convertsByType || {};
+    this.convertsByReceptivity = saveData.convertsByReceptivity || {
+      receptive: 0,
+      neutral: 0,
+      skeptical: 0
+    };
+    this.totalAttempts = saveData.totalAttempts || 0;
   }
 
   /**
    * Reset completo
    */
   reset() {
+    this.money = 20;
     this.influence = RevolutionConfig.INITIAL_INFLUENCE;
     this.time = 0;
     this.currentPhase = RevolutionConfig.INITIAL_PHASE;
     this.goalReached = false;
     this.spawnTimer = 0;
     this.capacity = RevolutionConfig.INITIAL_CAPACITY;
+    this.citizenCap = 15;
     this.citizens = [];
     this.consciousness = RevolutionConfig.INITIAL_CONSCIOUSNESS;
     this.consciousnessHistory = [];
@@ -309,6 +383,12 @@ export class RevolutionGameState {
     this.maxAssemblyPower = 0;
     this.assemblyLevel = 0;
     this.totalConverts = 0;
+    this.convertsByReceptivity = {
+      receptive: 0,
+      neutral: 0,
+      skeptical: 0
+    };
+    this.totalAttempts = 0;
     this.convertsByType = {};
     this.influenceEffects = [];
     this.logLines = [];

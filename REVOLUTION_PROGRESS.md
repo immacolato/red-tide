@@ -30,54 +30,65 @@
    - ✅ Sistema assemblee
    - ✅ goalReached flag
 
-### 🚧 Da Fare
+### ✅ Appena Completato
 
-5. **Adattamento SpawnSystem**
-   - [ ] Usare RevolutionConfig invece di Config
-   - [ ] Spawn basato su citizenTypes
-   - [ ] Spawn pesato per tipo di cittadino
-   - [ ] Integrazione con consciousness
+5. **SpawnSystem Rivoluzionario**
+   - ✅ RevolutionSpawnSystem integrato in main
+   - ✅ Spawn basato su citizenTypes dalla fase corrente
+   - ✅ Spawn pesato per tipo di cittadino
+   - ✅ Integrazione con consciousness per spawn rate
 
-5. **Adattamento SpawnSystem**
-   - [ ] Usare citizenTypes invece di logica generica
-   - [ ] Spawn basato su consciousness invece di satisfaction
-   - [ ] Spawn pesato per tipo di cittadino
-
-6. **Aggiornamento main.js**
-   - [ ] Integrare RevolutionConfig
-   - [ ] Setup PhaseManager
-   - [ ] Gestione Comrades nel loop
-   - [ ] Nuova logica di conversione (invece di vendita)
-   - [ ] Event listeners per assumere comrades
+6. **Aggiornamento revolution-main.js**
+   - ✅ Integrato RevolutionConfig via PhaseManager
+   - ✅ Setup PhaseManager completo
+   - ✅ Gestione Comrades nel loop con effetti passivi
+   - ✅ Logica di conversione completa (invece di vendita)
+   - ✅ Event listeners per assumere comrades
+   - ✅ Update dinamici costi azioni
 
 7. **UI Completa Rinnovazione**
-   - [ ] Titolo: "Red Tide: The Revolution Simulator"
-   - [ ] Pannello Fase corrente + progresso obiettivo
-   - [ ] Pannello Comrades (assumi/gestisci)
-   - [ ] Stats: Influence, Consciousness, Converts
-   - [ ] Tematiche con difficoltà/impatto
-   - [ ] Azioni fase-specifiche
-   - [ ] Log events rivoluzionari
+   - ✅ Titolo: "Red Tide: The Revolution Simulator"
+   - ✅ Pannello Fase corrente + progresso obiettivo
+   - ✅ Pannello Comrades (assumi/gestisci) con sezioni separate
+   - ✅ Stats: Influence, Consciousness, Converts
+   - ✅ Tematiche con difficoltà/impatto/stock
+   - ✅ Azioni fase-specifiche (Assemblea, Stampa, Espansione)
+   - ✅ Log events rivoluzionari
 
 8. **Rendering Canvas**
-   - [ ] Background sala circolo
-   - [ ] InfoDesk (ex-scaffali) con tematiche
-   - [ ] Cittadini con icone tipo
-   - [ ] Effetti "conversione" (invece di vendita)
-   - [ ] Visual feedback per Comrades attivi
+   - ✅ Background sala circolo (tema dark/red)
+   - ✅ InfoDesk con tematiche e stock indicator
+   - ✅ Cittadini con icone tipo (prima lettera)
+   - ✅ Effetti "conversione" con influenza (+X)
+   - ✅ Colori cittadini basati su receptivity
 
 9. **SaveManager**
-   - [ ] Aggiornare per nuove proprietà
-   - [ ] Salvare PhaseManager state
-   - [ ] Salvare Comrades
-   - [ ] Nuova chiave: 'red_tide_save'
+   - ✅ Aggiornato per nuove proprietà
+   - ✅ Salva PhaseManager state
+   - ✅ Salva Comrades
+   - ✅ Nuova chiave: 'redTideRevolutionSave'
 
-10. **Polish e Balancing Fase 1**
-    - [ ] Testare progressione
-    - [ ] Bilanciare costi/guadagni
-    - [ ] Testare sistema Comrades
-    - [ ] Feedback visivo
-    - [ ] Tutorial/onboarding
+### 🚧 Da Fare (Fase 1 - Polish)
+
+10. **Testing e Balancing Fase 1**
+    - [ ] Testare progressione completa (0 → 50 converts)
+    - [ ] Bilanciare costi/guadagni influence
+    - [ ] Testare sistema Comrades (tutti e 3 i tipi)
+    - [ ] Verificare decay consciousness
+    - [ ] Testare salvataggio/caricamento completo
+    - [ ] Fix eventuali bug di gameplay
+
+11. **Miglioramenti UX**
+    - [ ] Tooltip su hover per spiegazioni
+    - [ ] Tutorial/onboarding per nuovi giocatori
+    - [ ] Sound effects (opzionale)
+    - [ ] Animazioni transizioni (opzionale)
+    - [ ] Feedback visivo migliore per conversioni
+
+12. **Documentazione**
+    - [ ] Update README con istruzioni complete
+    - [ ] Screenshots del gioco
+    - [ ] Video demo (opzionale)
 
 ### 📝 Note Tecniche
 

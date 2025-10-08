@@ -11,7 +11,8 @@
  * @module entities/Citizen
  */
 
-import { RevolutionConfig, RevolutionUtils } from '../core/RevolutionConfig.js';
+import { RevolutionConfig } from '../core/RevolutionConfig.js';
+import { RevolutionUtils } from '../utils/RevolutionUtils.js';
 
 export class Citizen {
   /**
@@ -32,9 +33,24 @@ export class Citizen {
     this.vx = 0;
     this.vy = 0;
 
-    // Tipo di cittadino
-    this.type = options.type;
-    this.icon = this.type.icon;
+    // Tipo di cittadino (può essere stringa o oggetto)
+    this.type = typeof options.type === 'string' ? options.type : options.type.id;
+    this.icon = options.type.icon || '👤';
+
+    // Identità personale - genera inline per evitare problemi di binding
+    const firstNames = [
+      'Luca', 'Marco', 'Paolo', 'Andrea', 'Francesco', 'Matteo', 'Alessandro', 'Davide',
+      'Sofia', 'Giulia', 'Chiara', 'Elena', 'Sara', 'Martina', 'Francesca', 'Anna',
+      'Giovanni', 'Lorenzo', 'Antonio', 'Giuseppe', 'Roberto', 'Stefano', 'Valentina',
+      'Federica', 'Alessia', 'Simone', 'Federico', 'Riccardo', 'Tommaso', 'Gabriele'
+    ];
+    const lastInitials = 'ABCDEFGLMNPRSTV';
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastInitial = lastInitials[Math.floor(Math.random() * lastInitials.length)];
+    
+    this.name = `${firstName} ${lastInitial}.`;
+    this.age = Math.floor(18 + Math.random() * 52); // 18-70 anni
+    this.gender = Math.random() > 0.5 ? 'M' : 'F';
 
     // Apparenza
     this.r = RevolutionConfig.CITIZEN.BASE_RADIUS + Math.random() * RevolutionConfig.CITIZEN.RADIUS_VARIANCE;
@@ -47,14 +63,14 @@ export class Citizen {
     this.targetDesk = options.targetDesk;
     this.topicIndex = options.topicIndex;
 
-    // Comportamento (influenzato dal tipo)
-    this.receptivity = this.type.receptivity;
+    // Comportamento (fornito direttamente nelle options per compatibilità)
+    this.receptivity = options.receptivity !== undefined ? options.receptivity : 0.5;
     this.mood = options.mood !== undefined ? options.mood : Math.random();
     this.patience = options.patience !== undefined ? options.patience : 10;
-    this.speed = this.type.speed || (RevolutionConfig.CITIZEN.BASE_SPEED + Math.random() * RevolutionConfig.CITIZEN.SPEED_VARIANCE);
+    this.speed = options.speed || (RevolutionConfig.CITIZEN.BASE_SPEED + Math.random() * RevolutionConfig.CITIZEN.SPEED_VARIANCE);
 
     // Influenza che dona se converte
-    this.influenceValue = this.type.influence;
+    this.influenceValue = options.influenceValue || 5;
 
     // Uscita
     this.exitChoice = null;
@@ -143,7 +159,9 @@ export class Citizen {
     // Considera anche il mood
     const finalProb = conversionProb * (0.7 + this.mood * 0.3);
 
-    if (Math.random() < finalProb) {
+    const randomRoll = Math.random();
+    
+    if (randomRoll < finalProb) {
       // CONVERTITO! 🚩
       this.converted = true;
       this.state = 'leave';
@@ -268,19 +286,42 @@ export class Citizen {
   }
 
   /**
+   * Genera un nome casuale italiano
+   * @returns {string} Nome abbreviato (es. "Luca A.")
+   */
+  generateName() {
+    const firstNames = [
+      'Luca', 'Marco', 'Paolo', 'Andrea', 'Francesco', 'Matteo', 'Alessandro', 'Davide',
+      'Sofia', 'Giulia', 'Chiara', 'Elena', 'Sara', 'Martina', 'Francesca', 'Anna',
+      'Giovanni', 'Lorenzo', 'Antonio', 'Giuseppe', 'Roberto', 'Stefano', 'Valentina',
+      'Federica', 'Alessia', 'Simone', 'Federico', 'Riccardo', 'Tommaso', 'Gabriele'
+    ];
+    
+    const lastInitials = 'ABCDEFGLMNPRSTV';
+    
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastInitial = lastInitials[Math.floor(Math.random() * lastInitials.length)];
+    
+    return `${firstName} ${lastInitial}.`;
+  }
+
+  /**
    * Serializza per salvataggio
    */
   toSaveData() {
     return {
       x: this.x,
       y: this.y,
-      typeId: this.type.id,
+      typeId: typeof this.type === 'string' ? this.type : this.type.id,
       state: this.state,
       topicIndex: this.topicIndex,
       mood: this.mood,
       patience: this.patience,
       converted: this.converted,
       timeAlive: this.timeAlive,
+      name: this.name,
+      age: this.age,
+      gender: this.gender,
     };
   }
 
@@ -303,6 +344,11 @@ export class Citizen {
     citizen.state = data.state;
     citizen.converted = data.converted;
     citizen.timeAlive = data.timeAlive;
+    
+    // Restore identity (already set in constructor, but override if saved)
+    if (data.name) citizen.name = data.name;
+    if (data.age) citizen.age = data.age;
+    if (data.gender) citizen.gender = data.gender;
 
     return citizen;
   }

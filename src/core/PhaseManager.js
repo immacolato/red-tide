@@ -25,13 +25,23 @@ export class PhaseManager {
   }
 
   /**
-   * Inizializza la fase corrente
+   * Inizializza una fase specifica
+   * @param {number} phaseNumber - Numero della fase (opzionale, usa currentPhase se non specificato)
    */
-  initPhase() {
+  initPhase(phaseNumber = null) {
+    if (phaseNumber !== null) {
+      this.currentPhase = phaseNumber;
+      this.gameState.currentPhase = phaseNumber;
+    }
+    
     this.phaseConfig = RevolutionUtils.getPhaseConfig(this.currentPhase);
     this.phaseStartTime = this.gameState.time;
     this.goalProgress = 0;
     this.goalTarget = this.phaseConfig.goal.target;
+    
+    // Reset counters for new phase
+    this.converts = 0;
+    this.totalInfluenceGained = 0;
     
     this.gameState.addLog(`🚩 ${this.phaseConfig.name.toUpperCase()}`);
     this.gameState.addLog(`📋 Obiettivo: ${this.phaseConfig.goal.description}`);
@@ -120,12 +130,34 @@ export class PhaseManager {
   }
 
   /**
+   * Alias per getPhaseConfig (per compatibilità)
+   */
+  getCurrentPhase() {
+    return this.phaseConfig;
+  }
+
+  /**
    * Ottiene le statistiche della fase
    */
   getPhaseStats() {
+    // Determina gli obiettivi basati sulla fase corrente
+    let goalsObj = {
+      converts: 500,
+      influence: 5000,
+    };
+    
+    if (this.phaseConfig && this.phaseConfig.goal) {
+      if (this.phaseConfig.goal.type === 'converts') {
+        goalsObj.converts = this.phaseConfig.goal.target;
+      } else if (this.phaseConfig.goal.type === 'influence') {
+        goalsObj.influence = this.phaseConfig.goal.target;
+      }
+    }
+    
     return {
       phase: this.currentPhase,
-      phaseName: this.phaseConfig.name,
+      name: this.phaseConfig.name,
+      phaseName: this.phaseConfig.name, // Alias per compatibilità
       converts: this.converts,
       goalProgress: this.goalProgress,
       goalTarget: this.goalTarget,
@@ -133,6 +165,7 @@ export class PhaseManager {
       goalPercentage: Math.min(100, (this.goalProgress / this.goalTarget) * 100),
       canAdvance: this.gameState.goalReached,
       nextPhaseCost: this.phaseConfig.nextPhaseCost,
+      goals: goalsObj, // Oggetto goals per updateHUD
     };
   }
 

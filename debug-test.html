@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Red Tide - Debug Test</title>
+<style>
+  body { margin: 0; padding: 20px; background: #0a0a0a; color: #fff; font-family: sans-serif; }
+  canvas { border: 2px solid #e74c3c; display: block; margin: 20px 0; }
+  #status { background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+  .success { color: #27ae60; }
+  .error { color: #e74c3c; }
+</style>
+</head>
+<body>
+<h1>🚩 Red Tide - Debug Test</h1>
+<div id="status">
+  <h2>Status Check</h2>
+  <div id="checks"></div>
+</div>
+<canvas id="canvas" width="960" height="640"></canvas>
+
+<script type="module">
+  const checksDiv = document.getElementById('checks');
+  
+  function log(message, isSuccess = true) {
+    const p = document.createElement('p');
+    p.className = isSuccess ? 'success' : 'error';
+    p.textContent = (isSuccess ? '✅ ' : '❌ ') + message;
+    checksDiv.appendChild(p);
+  }
+
+  try {
+    log('HTML loaded');
+    
+    // Test canvas
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+      log('Canvas element found');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        log('Canvas context obtained');
+        // Draw test
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(10, 10, 100, 100);
+        log('Canvas drawing works');
+      } else {
+        log('Failed to get canvas context', false);
+      }
+    } else {
+      log('Canvas element not found', false);
+    }
+    
+    // Test imports
+    log('Testing imports...');
+    
+    import('./src/core/RevolutionGameState.js').then(module => {
+      log('RevolutionGameState imported');
+      const gameState = new module.RevolutionGameState();
+      log('RevolutionGameState instantiated: influence=' + gameState.influence);
+    }).catch(err => {
+      log('RevolutionGameState import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+    import('./src/core/PhaseManager.js').then(module => {
+      log('PhaseManager imported');
+    }).catch(err => {
+      log('PhaseManager import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+    import('./src/entities/Citizen.js').then(module => {
+      log('Citizen imported');
+    }).catch(err => {
+      log('Citizen import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+    import('./src/entities/Topic.js').then(module => {
+      log('Topic imported');
+    }).catch(err => {
+      log('Topic import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+    import('./src/entities/InfoDesk.js').then(module => {
+      log('InfoDesk imported');
+    }).catch(err => {
+      log('InfoDesk import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+    import('./src/entities/Comrade.js').then(module => {
+      log('Comrade imported');
+    }).catch(err => {
+      log('Comrade import failed: ' + err.message, false);
+      console.error(err);
+    });
+    
+  } catch (error) {
+    log('Critical error: ' + error.message, false);
+    console.error(error);
+  }
+</script>
+</body>
+</html>
