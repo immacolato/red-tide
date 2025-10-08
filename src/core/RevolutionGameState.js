@@ -215,14 +215,29 @@ export class RevolutionGameState {
   }
 
   /**
-   * Aggiorna i compagni (effetti passivi)
+   * Aggiorna i compagni (effetti passivi e pagamenti)
    */
   updateComrades(dt) {
     for (const comrade of this.comrades) {
       const effect = comrade.update(dt);
       
       if (effect) {
-        // Applica l'effetto
+        // Gestisci pagamento
+        if (effect.type === 'payment_due') {
+          const canPay = this.spendMoney(effect.amount);
+          if (canPay) {
+            comrade.pay();
+            this.addLog(`💰 Pagato ${comrade.name}: ${effect.amount}€`);
+          } else {
+            comrade.stopWorking();
+            this.addLog(`⚠️ ${comrade.name} non può lavorare - fondi insufficienti!`);
+          }
+          continue;
+        }
+        
+        // Applica gli effetti solo se sta lavorando
+        if (!comrade.working) continue;
+        
         switch (effect.type) {
           case 'passive_restock':
             // Rifornisce tutte le tematiche gradualmente
@@ -240,11 +255,6 @@ export class RevolutionGameState {
           case 'conversion_boost':
             // Applicato in modo passivo (vedi SpawnSystem)
             break;
-        }
-        
-        // Paga upkeep
-        if (effect.upkeep > 0) {
-          this.spendInfluence(effect.upkeep);
         }
       }
     }

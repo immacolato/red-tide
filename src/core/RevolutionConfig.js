@@ -193,8 +193,9 @@ export const RevolutionConfig = {
         name: 'Volontario',
         icon: '✊',
         description: 'Distribuisce volantini passivamente',
-        cost: 50,
-        upkeep: 0, // Costo per tick (0 = gratis)
+        cost: 50, // Costo assunzione (influenza)
+        upkeep: 3, // Costo ogni 30 secondi (€)
+        paymentInterval: 30,
         effect: {
           type: 'passive_restock',
           value: 0.5, // Stock al secondo
@@ -206,8 +207,9 @@ export const RevolutionConfig = {
         name: 'Organizzatore',
         icon: '🎯',
         description: 'Aumenta la coscienza di classe passivamente',
-        cost: 100,
-        upkeep: 5,
+        cost: 100, // Costo assunzione (influenza)
+        upkeep: 5, // Costo ogni 30 secondi (€)
+        paymentInterval: 30,
         effect: {
           type: 'consciousness_gain',
           value: 0.3, // Al secondo
@@ -219,8 +221,9 @@ export const RevolutionConfig = {
         name: 'Educatore Popolare',
         icon: '👨‍🏫',
         description: 'Migliora l\'efficacia delle conversioni',
-        cost: 150,
-        upkeep: 8,
+        cost: 150, // Costo assunzione (influenza)
+        upkeep: 8, // Costo ogni 30 secondi (€)
+        paymentInterval: 30,
         effect: {
           type: 'conversion_boost',
           value: 1.25, // Moltiplicatore

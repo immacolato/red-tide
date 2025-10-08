@@ -18,8 +18,9 @@ export class Comrade {
     this.description = config.description || '';
 
     // Costi
-    this.cost = config.cost;
-    this.upkeep = config.upkeep || 0;
+    this.hireCost = config.cost;
+    this.upkeep = config.upkeep || 0; // Costo ogni 30 secondi
+    this.paymentInterval = config.paymentInterval || 30; // Ogni quanto paga (secondi)
 
     // Effetto
     if (config.effect) {
@@ -33,18 +34,55 @@ export class Comrade {
     // Stato
     this.hireTime = hireTime;
     this.active = true;
+    this.working = true; // Se può lavorare (ha ricevuto pagamento)
 
-    // Accumulator per effetti al secondo
+    // Posizione sul canvas (assegnata quando viene aggiunto)
+    this.x = config.x || 0;
+    this.y = config.y || 0;
+    this.r = 10; // Raggio visuale
+
+    // Timer per effetti e pagamento
     this.accumulator = 0;
+    // Inizializza il timer a 0 - il primo pagamento avverrà dopo paymentInterval secondi
+    this.paymentTimer = 0;
+    this.firstPaymentDone = false; // Flag per gestire il primo pagamento 
   }
 
   /**
-   * Aggiorna il compagno (per effetti al secondo)
+   * Aggiorna il compagno (per effetti al secondo e pagamento)
    * @param {number} dt - Delta time
    * @returns {object|null} Effetto da applicare o null
    */
   update(dt) {
     if (!this.active) return null;
+
+    // Timer per pagamento (solo se già fatto il primo pagamento)
+    if (this.firstPaymentDone) {
+      this.paymentTimer += dt;
+      
+      // Check pagamento
+      if (this.paymentTimer >= this.paymentInterval) {
+        return {
+          type: 'payment_due',
+          comrade: this,
+          amount: this.upkeep,
+        };
+      }
+    } else {
+      // Per il primo ciclo, aspetta l'intervallo completo
+      this.paymentTimer += dt;
+      if (this.paymentTimer >= this.paymentInterval) {
+        this.firstPaymentDone = true;
+        return {
+          type: 'payment_due',
+          comrade: this,
+          amount: this.upkeep,
+        };
+      }
+    }
+
+    // Applica effetti solo se sta lavorando
+    if (!this.working) return null;
 
     this.accumulator += dt;
 
@@ -55,11 +93,25 @@ export class Comrade {
       return {
         type: this.effectType,
         value: this.effectValue,
-        upkeep: this.upkeep,
       };
     }
 
     return null;
+  }
+  
+  /**
+   * Paga il compagno (chiamato quando viene pagato)
+   */
+  pay() {
+    this.paymentTimer = 0;
+    this.working = true;
+  }
+  
+  /**
+   * Smette di lavorare per mancato pagamento
+   */
+  stopWorking() {
+    this.working = false;
   }
 
   /**
@@ -73,16 +125,51 @@ export class Comrade {
    * Ottiene la descrizione dell'effetto
    */
   getEffectDescription() {
+    let desc = '';
     switch (this.effectType) {
-      case 'auto_restock':
-        return `Auto-rifornisce ogni ${this.effectValue}s`;
-      case 'consciousness_boost':
-        return `+${this.effectValue} coscienza ogni 8s`;
+      case 'passive_restock':
+        return `Rifornisce materiali passivamente`;
+      case 'consciousness_gain':
+        return `+${this.effectValue.toFixed(1)} coscienza/s`;
       case 'conversion_boost':
-        return `+${this.effectValue}% probabilità conversione`;
+        return `x${this.effectValue} efficacia conversioni`;
       default:
-        return 'Effetto sconosciuto';
+        desc = 'Effetto sconosciuto';
     }
+    
+    // Aggiungi stato
+    if (!this.working) {
+      desc += ' ⚠️ NON PAGATO';
+    }
+    
+    return desc;
+  }
+  
+  /**
+   * Ottiene il colore del compagno in base allo stato
+   */
+  getColor() {
+    if (!this.working) return '#95a5a6'; // Grigio se non lavora
+    if (!this.active) return '#7f8c8d'; // Grigio scuro se disattivato
+    
+    // Colori per tipo
+    switch (this.type) {
+      case 'volunteer':
+        return '#3498db'; // Blu
+      case 'organizer':
+        return '#e74c3c'; // Rosso
+      case 'educator':
+        return '#f39c12'; // Arancione
+      default:
+        return '#2ecc71'; // Verde
+    }
+  }
+  
+  /**
+   * Ottiene il tempo rimanente fino al prossimo pagamento
+   */
+  getTimeUntilPayment() {
+    return Math.max(0, this.paymentInterval - this.paymentTimer);
   }
 
   /**
@@ -95,10 +182,14 @@ export class Comrade {
       icon: this.icon,
       description: this.description,
       upkeep: this.upkeep,
+      paymentInterval: this.paymentInterval,
       effectType: this.effectType,
       effectValue: this.effectValue,
       active: this.active,
+      working: this.working,
       timeHired: this.hireTime,
+      timeUntilPayment: this.getTimeUntilPayment(),
+      position: { x: this.x, y: this.y },
     };
   }
 
@@ -109,14 +200,20 @@ export class Comrade {
     return {
       type: this.type,
       name: this.name,
-      cost: this.cost,
+      hireCost: this.hireCost,
       upkeep: this.upkeep,
+      paymentInterval: this.paymentInterval,
       effect: {
         type: this.effectType,
         value: this.effectValue,
       },
       hireTime: this.hireTime,
       active: this.active,
+      working: this.working,
+      paymentTimer: this.paymentTimer,
+      firstPaymentDone: this.firstPaymentDone,
+      x: this.x,
+      y: this.y,
     };
   }
 
@@ -129,13 +226,19 @@ export class Comrade {
       {
         type: data.type,
         name: data.name,
-        cost: data.cost,
+        cost: data.hireCost || data.cost,
         upkeep: data.upkeep,
+        paymentInterval: data.paymentInterval || 30,
         effect: data.effect,
+        x: data.x || 0,
+        y: data.y || 0,
       },
       data.hireTime
     );
     comrade.active = data.active !== false;
+    comrade.working = data.working !== false;
+    comrade.paymentTimer = data.paymentTimer || 0;
+    comrade.firstPaymentDone = data.firstPaymentDone || false;
     return comrade;
   }
 }

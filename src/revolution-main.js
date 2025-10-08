@@ -307,7 +307,17 @@ function initGame() {
             gameState.citizens = saveData.citizens.map(c => Citizen.fromSaveData(c, phase));
           }
           if (saveData.comrades && saveData.comrades.length > 0) {
-            gameState.comrades = saveData.comrades.map(c => Comrade.fromSaveData(c));
+            gameState.comrades = saveData.comrades.map((c, index) => {
+              const comrade = Comrade.fromSaveData(c);
+              // Riposiziona i compagni caricati in verticale a destra (centrati nell'area)
+              const areaW = 110;
+              const areaCenterX = W - areaW - 10 + areaW / 2;
+              const spacing = 90; // Spaziatura aumentata
+              const startY = 110;
+              comrade.x = areaCenterX;
+              comrade.y = startY + (index * spacing);
+              return comrade;
+            });
           }
           if (saveData.currentPhase) {
             phaseManager.initPhase(saveData.currentPhase);
@@ -415,6 +425,11 @@ function update(dt) {
   // Update action buttons cost periodicamente
   if (Math.floor(gameState.time) !== Math.floor((gameState.time - dt))) {
     updateActionButtons();
+  }
+  
+  // Update comrades panel ogni 2 secondi per countdown pagamenti
+  if (Math.floor(gameState.time * 0.5) !== Math.floor((gameState.time - dt) * 0.5)) {
+    renderComradesPanel();
   }
 }
 
@@ -725,6 +740,162 @@ function render() {
     }
   }
 
+  // Area compagni - rettangolo verticale a destra
+  if (gameState.comrades.some(c => c.active)) {
+    const activeComrades = gameState.comrades.filter(c => c.active);
+    const areaW = 110;
+    const areaH = Math.min(H - 150, 90 * activeComrades.length + 100); // Spacing aumentato a 90
+    const areaX = W - areaW - 10; // 10px margin from right
+    const areaY = 70; // Abbassato per lasciare spazio alla scritta sopra
+    
+    // Etichetta "COMPAGNI" sopra il rettangolo
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMPAGNI', areaX + areaW / 2, areaY - 20);
+    
+    ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
+    ctx.fillRect(areaX, areaY, areaW, areaH);
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(areaX, areaY, areaW, areaH);
+  }
+
+  // Compagni (lavoratori) - disposizione verticale compatta a destra
+  const activeComrades = gameState.comrades.filter(c => c.active);
+  
+  for (let i = 0; i < activeComrades.length; i++) {
+    const comrade = activeComrades[i];
+    // Le posizioni x,y sono già impostate quando vengono creati o caricati
+
+    const comradeRadius = 14; // Più piccoli per layout verticale compatto
+
+    // Ombra
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.arc(comrade.x + 2, comrade.y + 2, comradeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Compagno - cerchio con colore basato su stato e tipo
+    ctx.fillStyle = comrade.getColor();
+    ctx.beginPath();
+    ctx.arc(comrade.x, comrade.y, comradeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bordo
+    if (comrade.working) {
+      ctx.shadowColor = '#e74c3c';
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = '#e74c3c';
+    } else {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#95a5a6';
+    }
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Icona del tipo di compagno al centro (più piccola)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const iconMap = {
+      'volunteer': '✊',
+      'organizer': '🎯',
+      'educator': '👨‍🏫'
+    };
+    const icon = iconMap[comrade.type] || '👤';
+    ctx.fillText(icon, comrade.x, comrade.y);
+    ctx.textBaseline = 'alphabetic';
+
+    // Nome SOTTO compatto
+    const labelY = comrade.y + comradeRadius + 12;
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    const statusIcon = comrade.working ? '✅' : '⚠️';
+    
+    // Nome abbreviato per risparmiare spazio
+    const shortName = comrade.name.split(' ')[0]; // Solo il primo nome
+    const comradeLabel = `${statusIcon} ${shortName}`;
+    
+    ctx.fillStyle = comrade.working ? '#2ecc71' : '#e74c3c';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText(comradeLabel, comrade.x, labelY);
+    
+    // Pulsante X per rimuovere (spostato più in alto a destra per non coprire l'icona)
+    const btnX = comrade.x + comradeRadius + 2;
+    const btnY = comrade.y - comradeRadius - 2;
+    const btnRadius = 7;
+    
+    // Background pulsante X
+    ctx.fillStyle = 'rgba(231, 76, 60, 0.9)';
+    ctx.beginPath();
+    ctx.arc(btnX, btnY, btnRadius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Bordo pulsante
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // X nel pulsante
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(btnX - 4, btnY - 4);
+    ctx.lineTo(btnX + 4, btnY + 4);
+    ctx.moveTo(btnX + 4, btnY - 4);
+    ctx.lineTo(btnX - 4, btnY + 4);
+    ctx.stroke();
+    
+    // Salva coordinate pulsante per click handler
+    comrade.removeButton = { x: btnX, y: btnY, r: btnRadius };
+    
+    // Barra pagamento SOTTO (più piccola)
+    const barWidth = 50;
+    const barHeight = 5;
+    const barX = comrade.x - barWidth / 2;
+    const barY = comrade.y + comradeRadius + 20;
+    
+    // Background barra con bordo
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
+    ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    if (comrade.working) {
+      // Progress
+      const progress = 1 - (comrade.getTimeUntilPayment() / comrade.paymentInterval);
+      let progressColor;
+      if (progress > 0.8) {
+        progressColor = '#e74c3c'; // Rosso - pagamento imminente
+      } else if (progress > 0.5) {
+        progressColor = '#f39c12'; // Arancione
+      } else {
+        progressColor = '#2ecc71'; // Verde - appena pagato
+      }
+      ctx.fillStyle = progressColor;
+      ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+      
+      // Tempo rimanente in secondi
+      const timeLeft = Math.ceil(comrade.getTimeUntilPayment());
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${timeLeft}s`, comrade.x, barY + barHeight + 10);
+    } else {
+      // Se non sta lavorando, mostra "UNPAID"
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(barX, barY, barWidth, barHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('UNPAID!', comrade.x, barY + barHeight + 10);
+    }
+  }
+
   // Effetti influenza
   renderInfluenceEffects();
 }
@@ -814,6 +985,12 @@ function updateHUD() {
   const phaseNameEl = document.getElementById('phase-name');
   if (phaseNameEl) phaseNameEl.textContent = phaseStats.name;
 
+  // Compagni count
+  const comradesOverlayEl = document.getElementById('comrades-overlay');
+  if (comradesOverlayEl) comradesOverlayEl.textContent = gameState.comrades.filter(c => c.active).length;
+  const comradesCountEl = document.getElementById('comrades-count');
+  if (comradesCountEl) comradesCountEl.textContent = gameState.comrades.filter(c => c.active).length;
+
   // Phase objectives - Converts
   const phaseConvertsEl = document.getElementById('phase-converts');
   if (phaseConvertsEl) phaseConvertsEl.textContent = phaseStats.converts;
@@ -841,12 +1018,6 @@ function updateHUD() {
   if (totalConvertsEl) totalConvertsEl.textContent = stats.totalConverts;
   const convertsOverlayEl = document.getElementById('converts-overlay');
   if (convertsOverlayEl) convertsOverlayEl.textContent = stats.totalConverts;
-
-  // Comrades count
-  const comradesCountEl = document.getElementById('comrades-count');
-  if (comradesCountEl) comradesCountEl.textContent = stats.comrades;
-  const comradesOverlayEl = document.getElementById('comrades-overlay');
-  if (comradesOverlayEl) comradesOverlayEl.textContent = stats.comrades;
 
   // Conversion statistics by receptivity
   const receptiveEl = document.getElementById('converts-receptive');
@@ -929,25 +1100,57 @@ function renderComradesPanel() {
 
   const phase = phaseManager.getCurrentPhase();
   
-  // Mostra compagni attualmente assunti
-  if (gameState.comrades.length > 0) {
+  // Mostra compagni attualmente assunti (solo quelli attivi)
+  const activeComrades = gameState.comrades.filter(c => c.active);
+  if (activeComrades.length > 0) {
     const activeDiv = document.createElement('div');
     activeDiv.innerHTML = '<div class="panel-subtitle">✊ Compagni Attivi</div>';
     container.appendChild(activeDiv);
     
-    for (const comrade of gameState.comrades) {
+    for (const comrade of activeComrades) {
       const div = document.createElement('div');
       div.className = 'comrade-item';
-      div.style.background = 'rgba(243, 156, 18, 0.05)';
-      div.style.borderColor = 'rgba(243, 156, 18, 0.3)';
+      
+      // Stile basato su stato
+      if (!comrade.working) {
+        div.style.background = 'rgba(231, 76, 60, 0.15)'; // Rosso se non lavora
+        div.style.borderColor = 'rgba(231, 76, 60, 0.5)';
+      } else {
+        div.style.background = 'rgba(46, 204, 113, 0.05)'; // Verde se lavora
+        div.style.borderColor = 'rgba(46, 204, 113, 0.3)';
+      }
+
+      const timeUntilPayment = comrade.getTimeUntilPayment();
+      const statusText = comrade.working 
+        ? `🕒 Prossimo pagamento: ${Math.ceil(timeUntilPayment)}s`
+        : `⚠️ NON PAGATO - Serve ${comrade.upkeep}€`;
 
       div.innerHTML = `
-        <div class="comrade-info">
-          <div class="comrade-name">✓ ${comrade.name}</div>
+        <div class="comrade-info" style="flex: 1;">
+          <div class="comrade-name">${comrade.working ? '✅' : '⚠️'} ${comrade.name}</div>
           <div class="comrade-details">${comrade.getEffectDescription()}</div>
-          <div class="comrade-cost">Upkeep: ${comrade.upkeep}/s</div>
+          <div class="comrade-cost">Stipendio: ${comrade.upkeep}€ ogni ${comrade.paymentInterval}s</div>
+          <div class="comrade-status" style="color: ${comrade.working ? '#2ecc71' : '#e74c3c'}; font-weight: bold; margin-top: 4px;">
+            ${statusText}
+          </div>
         </div>
+        <button class="remove-comrade-btn" data-comrade-id="${gameState.comrades.indexOf(comrade)}" style="
+          background: rgba(231, 76, 60, 0.9);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 8px 12px;
+          cursor: pointer;
+          font-weight: bold;
+          font-size: 14px;
+          margin-left: 8px;
+          flex-shrink: 0;
+        ">✖</button>
       `;
+      
+      // Stile flex per allineare info e pulsante
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
 
       container.appendChild(div);
     }
@@ -964,9 +1167,12 @@ function renderComradesPanel() {
 
     div.innerHTML = `
       <div class="comrade-info">
-        <div class="comrade-name">${comradeData.name}</div>
+        <div class="comrade-name">${comradeData.icon} ${comradeData.name}</div>
         <div class="comrade-details">${comradeData.description}</div>
-        <div class="comrade-cost">Costo: ⚡${comradeData.cost} | Upkeep: ${comradeData.upkeep}/s</div>
+        <div class="comrade-cost">
+          Assunzione: ⚡${comradeData.cost} influenza<br>
+          Stipendio: €${comradeData.upkeep} ogni ${comradeData.paymentInterval || 30}s
+        </div>
       </div>
       <div class="comrade-actions">
         <button data-action="hire-comrade" data-type="${comradeData.id}" class="comrade-btn hire">
@@ -993,6 +1199,38 @@ function setupEventListeners() {
       const scaleY = H / rect.height;
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
+
+      // Check se si clicca sul pulsante X per rimuovere un compagno
+      for (let i = gameState.comrades.length - 1; i >= 0; i--) {
+        const comrade = gameState.comrades[i];
+        if (!comrade.active || !comrade.removeButton) continue;
+        
+        const btn = comrade.removeButton;
+        const btnDx = clickX - btn.x;
+        const btnDy = clickY - btn.y;
+        const btnDist = Math.sqrt(btnDx * btnDx + btnDy * btnDy);
+        
+        if (btnDist < btn.r) {
+          // Click sul pulsante X - rimuovi compagno
+          comrade.deactivate();
+          gameState.addLog(`❌ ${comrade.name} rimosso`);
+          
+          // Riposiziona i compagni attivi rimanenti
+          const activeComrades = gameState.comrades.filter(c => c.active);
+          const areaW = 110;
+          const areaCenterX = W - areaW - 10 + areaW / 2;
+          const spacing = 90; // Aumentato per più spazio tra compagni
+          const startY = 110;
+          activeComrades.forEach((c, index) => {
+            c.x = areaCenterX;
+            c.y = startY + (index * spacing);
+          });
+          
+          renderComradesPanel(); // Aggiorna pannello laterale
+          updateHUD(); // Aggiorna conteggio nell'HUD
+          return;
+        }
+      }
 
       // Check se si clicca sul pulsante + di un desk (ora più in alto)
       for (let i = 0; i < gameState.infoDesks.length; i++) {
@@ -1053,6 +1291,31 @@ function setupEventListeners() {
       const button = e.target.closest('button');
       if (!button) return;
 
+      // Gestione rimozione compagno
+      if (button.classList.contains('remove-comrade-btn')) {
+        const comradeId = parseInt(button.dataset.comradeId);
+        const comrade = gameState.comrades[comradeId];
+        if (comrade) {
+          comrade.deactivate();
+          gameState.addLog(`❌ ${comrade.name} rimosso`);
+          
+          // Riposiziona i compagni attivi rimanenti
+          const activeComrades = gameState.comrades.filter(c => c.active);
+          const areaW = 110;
+          const areaCenterX = W - areaW - 10 + areaW / 2;
+          const spacing = 90; // Aumentato per più spazio tra compagni
+          const startY = 110;
+          activeComrades.forEach((c, index) => {
+            c.x = areaCenterX;
+            c.y = startY + (index * spacing);
+          });
+          
+          renderComradesPanel();
+          updateHUD();
+        }
+        return;
+      }
+
       const action = button.dataset.action;
       const type = button.dataset.type;
 
@@ -1060,21 +1323,48 @@ function setupEventListeners() {
         const phase = phaseManager.getCurrentPhase();
         const comradeData = phase.comrades.find(c => c.id === type);
 
-        if (comradeData && gameState.spendInfluence(comradeData.cost)) {
+        if (comradeData) {
+          // Controlla limiti di assunzione per tipo
+          const comradeTypeCount = gameState.comrades.filter(c => c.type === comradeData.id && c.active).length;
+          const limits = {
+            'volunteer': 4,
+            'organizer': 2,
+            'educator': 1
+          };
+          const maxForType = limits[comradeData.id] || 1;
+          
+          if (comradeTypeCount >= maxForType) {
+            gameState.addLog(`❌ Limite raggiunto per ${comradeData.name} (max ${maxForType})`);
+            return;
+          }
+          
+          // Calcola posizione verticale a destra del canvas (centrato nell'area)
+          const areaW = 110;
+          const areaCenterX = W - areaW - 10 + areaW / 2;
+          const comradeIndex = gameState.comrades.filter(c => c.active).length;
+          const spacing = 90; // Spaziatura verticale tra compagni (aumentata per più spazio)
+          const startY = 110; // Inizia dalla parte alta dentro l'area
+          
+          const comradeX = areaCenterX;
+          const comradeY = startY + (comradeIndex * spacing);
+          
           const comrade = new Comrade({
             type: comradeData.id,
             name: comradeData.name,
             cost: comradeData.cost,
             upkeep: comradeData.upkeep,
+            paymentInterval: comradeData.paymentInterval || 30,
             effect: comradeData.effect,
-          });
+            x: comradeX,
+            y: comradeY,
+          }, gameState.time);
 
-          gameState.hireComrade(comrade);
-          gameState.addLog(`✊ Assunto ${comrade.name}!`);
-          renderComradesPanel();
-          updateHUD();
-        } else {
-          gameState.addLog('❌ Influenza insufficiente per assumere');
+          // hireComrade gestisce internamente il pagamento e i log
+          const hired = gameState.hireComrade(comrade);
+          if (hired) {
+            renderComradesPanel();
+            updateHUD();
+          }
         }
       }
     });
