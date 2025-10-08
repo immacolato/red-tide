@@ -2,7 +2,7 @@ name: Deploy Red Tide to Pages
 
 on:
   push:
-    branches: ["feature/revolution-game"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
