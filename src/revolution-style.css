@@ -342,6 +342,12 @@ canvas {
 .topic-details {
   font-size: 11px;
   color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.topic-stock {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .topic-actions {
@@ -392,12 +398,46 @@ canvas {
   font-size: 13px;
   font-weight: 600;
   color: var(--accent-gold);
+  margin-bottom: 4px;
+}
+
+.comrade-details {
+  font-size: 11px;
+  color: var(--text-secondary);
   margin-bottom: 2px;
 }
 
-.comrade-desc {
-  font-size: 11px;
+.comrade-cost {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.comrade-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.comrade-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
   color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 11px;
+}
+
+.comrade-btn.hire {
+  background: rgba(243, 156, 18, 0.1);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.comrade-btn:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: var(--text-primary);
+  border-color: var(--accent-red);
 }
 
 .available-grid {

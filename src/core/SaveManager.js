@@ -7,8 +7,8 @@
  * @module core/SaveManager
  */
 
-const SAVE_KEY = 'shopTycoonSave';
-const AUTOSAVE_INTERVAL = 10000; // 10 secondi
+const SAVE_KEY = 'redTideRevolutionSave';
+const AUTOSAVE_INTERVAL = 15000; // 15 secondi
 
 export class SaveManager {
   constructor(gameState) {

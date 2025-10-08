@@ -303,6 +303,11 @@ function update(dt) {
   if (Math.floor(gameState.time * 2) !== Math.floor((gameState.time - dt) * 2)) {
     updateHUD();
   }
+  
+  // Update action buttons cost periodicamente
+  if (Math.floor(gameState.time) !== Math.floor((gameState.time - dt))) {
+    updateActionButtons();
+  }
 }
 
 function updateCitizens(dt) {
@@ -579,6 +584,21 @@ function updateHUD() {
   }
 }
 
+function updateActionButtons() {
+  // Update costo assemblea
+  const assemblyCostEl = document.getElementById('assembly-cost');
+  if (assemblyCostEl) {
+    assemblyCostEl.textContent = gameState.assemblyCost;
+  }
+
+  // Update costo espansione
+  const expandCostEl = document.getElementById('expand-cost');
+  if (expandCostEl) {
+    const cost = Math.floor(50 * Math.pow(1.4, Math.floor((gameState.citizenCap - 15) / 5)));
+    expandCostEl.textContent = cost;
+  }
+}
+
 function renderTopicsPanel() {
   const container = document.getElementById('topics-list');
   if (!container) return;
@@ -625,23 +645,49 @@ function renderComradesPanel() {
   container.innerHTML = '';
 
   const phase = phaseManager.getCurrentPhase();
+  
+  // Mostra compagni attualmente assunti
+  if (gameState.comrades.length > 0) {
+    const activeDiv = document.createElement('div');
+    activeDiv.innerHTML = '<div class="panel-subtitle">✊ Compagni Attivi</div>';
+    container.appendChild(activeDiv);
+    
+    for (const comrade of gameState.comrades) {
+      const div = document.createElement('div');
+      div.className = 'comrade-item';
+      div.style.background = 'rgba(243, 156, 18, 0.05)';
+      div.style.borderColor = 'rgba(243, 156, 18, 0.3)';
+
+      div.innerHTML = `
+        <div class="comrade-info">
+          <div class="comrade-name">✓ ${comrade.name}</div>
+          <div class="comrade-details">${comrade.getEffectDescription()}</div>
+          <div class="comrade-cost">Upkeep: ${comrade.upkeep}/s</div>
+        </div>
+      `;
+
+      container.appendChild(div);
+    }
+  }
+
+  // Mostra compagni disponibili da assumere
+  const availableDiv = document.createElement('div');
+  availableDiv.innerHTML = '<div class="panel-subtitle" style="margin-top: 16px;">📋 Assumi Nuovi</div>';
+  container.appendChild(availableDiv);
 
   for (const comradeData of phase.comrades) {
     const div = document.createElement('div');
     div.className = 'comrade-item';
 
-    // Conta quanti di questo tipo abbiamo già
-    const count = gameState.comrades.filter(c => c.type === comradeData.id).length;
-
     div.innerHTML = `
       <div class="comrade-info">
-        <div class="comrade-name">${comradeData.name} ${count > 0 ? `(${count})` : ''}</div>
+        <div class="comrade-name">${comradeData.name}</div>
         <div class="comrade-details">${comradeData.description}</div>
-        <div class="comrade-cost">Costo: €${comradeData.cost} | Upkeep: ${comradeData.upkeep}/s</div>
+        <div class="comrade-cost">Costo: ⚡${comradeData.cost} | Upkeep: ${comradeData.upkeep}/s</div>
       </div>
       <div class="comrade-actions">
         <button data-action="hire-comrade" data-type="${comradeData.id}" class="comrade-btn hire">
-          Assumi €${comradeData.cost}
+          Assumi ⚡${comradeData.cost}
         </button>
       </div>
     `;
@@ -719,6 +765,7 @@ function setupEventListeners() {
     assemblyBtn.onclick = () => {
       gameState.doAssembly();
       updateHUD();
+      updateActionButtons();
     };
   }
 
@@ -730,8 +777,9 @@ function setupEventListeners() {
 
       if (gameState.spendInfluence(cost)) {
         gameState.citizenCap += 5;
-        gameState.addLog(`🏗️ Circolo espanso! Capacità → ${gameState.citizenCap} (€${cost})`);
+        gameState.addLog(`🏗️ Circolo espanso! Capacità → ${gameState.citizenCap} (⚡${cost})`);
         updateHUD();
+        updateActionButtons();
       } else {
         gameState.addLog('❌ Influenza insufficiente per espansione');
       }
