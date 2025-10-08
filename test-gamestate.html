@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧪 Test GameState - Shop Tycoon</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #0a0e1a;
+      color: #fff;
+    }
+    h1 {
+      color: #00d4aa;
+      border-bottom: 2px solid #00d4aa;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: #1a1f2e;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border-left: 4px solid #00d4aa;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .pass {
+      background: rgba(0, 200, 81, 0.2);
+      border-left: 3px solid #00c851;
+    }
+    .fail {
+      background: rgba(255, 68, 68, 0.2);
+      border-left: 3px solid #ff4444;
+    }
+    .info {
+      background: rgba(0, 212, 170, 0.1);
+      border-left: 3px solid #00d4aa;
+    }
+    button {
+      background: #00d4aa;
+      color: #0a0e1a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #00e5ba;
+    }
+    pre {
+      background: #000;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test GameState</h1>
+  
+  <div class="test-section">
+    <h2>Istruzioni</h2>
+    <div class="test-result info">
+      <p>Questo test verifica il modulo GameState in isolamento.</p>
+      <p><strong>Prima di eseguire:</strong></p>
+      <ol>
+        <li>Assicurati che <code>src/v2/core/GameState.js</code> esista</li>
+        <li>Clicca "Esegui Test" per testare tutte le funzionalità</li>
+        <li>Verifica che tutti i test siano PASS (verde)</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Controlli</h2>
+    <button onclick="runTests()">▶️ Esegui Test</button>
+    <button onclick="clearResults()">🗑️ Pulisci</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script type="module">
+    window.clearResults = function() {
+      document.getElementById('output').innerHTML = '';
+    };
+
+    window.runTests = async function() {
+      const output = document.getElementById('output');
+      output.innerHTML = '<div class="test-section"><h2>Risultati Test</h2></div>';
+      
+      const log = (msg, type = 'info') => {
+        const div = document.createElement('div');
+        div.className = `test-result ${type}`;
+        div.innerHTML = msg;
+        output.appendChild(div);
+      };
+
+      try {
+        // Import del modulo da testare
+        log('📦 Importazione GameState...', 'info');
+        const { GameState } = await import('./src/v2/core/GameState.js');
+        log('✅ GameState importato con successo', 'pass');
+
+        // Test 1: Inizializzazione
+        log('<br><strong>Test 1: Inizializzazione</strong>', 'info');
+        const state = new GameState();
+        
+        if (state.money === 150) {
+          log('✅ PASS: money iniziale = 150', 'pass');
+        } else {
+          log(`❌ FAIL: money = ${state.money}, atteso 150`, 'fail');
+        }
+        
+        if (state.satisfaction === 50) {
+          log('✅ PASS: satisfaction iniziale = 50', 'pass');
+        } else {
+          log(`❌ FAIL: satisfaction = ${state.satisfaction}, atteso 50`, 'fail');
+        }
+
+        // Test 2: Aggiungere denaro
+        log('<br><strong>Test 2: Aggiungere Denaro</strong>', 'info');
+        state.addMoney(100);
+        
+        if (state.money === 250) {
+          log('✅ PASS: addMoney(100) → money = 250', 'pass');
+        } else {
+          log(`❌ FAIL: money = ${state.money}, atteso 250`, 'fail');
+        }
+
+        // Test 3: Spendere denaro (successo)
+        log('<br><strong>Test 3: Spendere Denaro (Disponibile)</strong>', 'info');
+        const success = state.spendMoney(50);
+        
+        if (success === true && state.money === 200) {
+          log('✅ PASS: spendMoney(50) restituisce true e money = 200', 'pass');
+        } else {
+          log(`❌ FAIL: success = ${success}, money = ${state.money}`, 'fail');
+        }
+
+        // Test 4: Spendere denaro (fallimento)
+        log('<br><strong>Test 4: Spendere Denaro (Insufficiente)</strong>', 'info');
+        const failure = state.spendMoney(300);
+        
+        if (failure === false && state.money === 200) {
+          log('✅ PASS: spendMoney(300) restituisce false e money invariato', 'pass');
+        } else {
+          log(`❌ FAIL: failure = ${failure}, money = ${state.money}`, 'fail');
+        }
+
+        // Test 5: Aggiornare tempo
+        log('<br><strong>Test 5: Aggiornare Tempo</strong>', 'info');
+        state.updateTime(1.5);
+        
+        if (state.time === 1.5) {
+          log('✅ PASS: updateTime(1.5) → time = 1.5', 'pass');
+        } else {
+          log(`❌ FAIL: time = ${state.time}, atteso 1.5`, 'fail');
+        }
+
+        // Test 6: Salvataggio
+        log('<br><strong>Test 6: Serializzazione per Salvataggio</strong>', 'info');
+        const saveData = state.toSaveData();
+        
+        let saveTests = 0;
+        if (saveData.money === 200) {
+          log('✅ PASS: saveData.money corretto', 'pass');
+          saveTests++;
+        }
+        if (saveData.time === 1.5) {
+          log('✅ PASS: saveData.time corretto', 'pass');
+          saveTests++;
+        }
+        if (saveData.version === 2) {
+          log('✅ PASS: saveData.version = 2', 'pass');
+          saveTests++;
+        }
+        if (saveData.satisfaction === 50) {
+          log('✅ PASS: saveData.satisfaction corretto', 'pass');
+          saveTests++;
+        }
+        
+        if (saveTests === 4) {
+          log('✅ Serializzazione completa', 'pass');
+        }
+
+        // Test 7: Caricamento da salvataggio
+        log('<br><strong>Test 7: Caricamento da Salvataggio</strong>', 'info');
+        const newState = new GameState();
+        newState.fromSaveData(saveData);
+        
+        if (newState.money === 200 && newState.time === 1.5) {
+          log('✅ PASS: fromSaveData ripristina correttamente lo stato', 'pass');
+        } else {
+          log(`❌ FAIL: money = ${newState.money}, time = ${newState.time}`, 'fail');
+        }
+
+        // Test 8: Sistema di log
+        log('<br><strong>Test 8: Sistema di Log</strong>', 'info');
+        state.addLog('Test message');
+        
+        if (state.logLines.length > 0 && state.logLines[0] === 'Test message') {
+          log('✅ PASS: addLog funziona correttamente', 'pass');
+        } else {
+          log(`❌ FAIL: logLines = ${state.logLines}`, 'fail');
+        }
+
+        // Test 9: Inizializzazione negozio
+        log('<br><strong>Test 9: Inizializzazione Negozio</strong>', 'info');
+        state.initShop();
+        
+        if (state.products.length > 0 && state.shelves.length > 0) {
+          log(`✅ PASS: initShop crea ${state.products.length} prodotti e ${state.shelves.length} scaffali`, 'pass');
+        } else {
+          log(`❌ FAIL: products = ${state.products.length}, shelves = ${state.shelves.length}`, 'fail');
+        }
+
+        // Riepilogo finale
+        log('<br><strong>📊 Riepilogo</strong>', 'info');
+        log(`<pre>${JSON.stringify({
+          money: state.money,
+          time: state.time,
+          satisfaction: state.satisfaction,
+          products: state.products.length,
+          shelves: state.shelves.length,
+          logs: state.logLines.length
+        }, null, 2)}</pre>`, 'info');
+        
+        log('<br><strong>✅ Tutti i test completati!</strong>', 'pass');
+        log('Se tutti i test sono PASS (verdi), il modulo GameState funziona correttamente.', 'info');
+
+      } catch (error) {
+        log(`<br><strong>❌ ERRORE CRITICO</strong>`, 'fail');
+        log(`<pre>${error.message}\n\n${error.stack}</pre>`, 'fail');
+        log('<br><strong>Possibili cause:</strong>', 'info');
+        log('1. Il file GameState.js non esiste in src/v2/core/', 'info');
+        log('2. Errori di sintassi nel codice', 'info');
+        log('3. Export non corretto (deve essere: export class GameState)', 'info');
+      }
+    };
+  </script>
+</body>
+</html>

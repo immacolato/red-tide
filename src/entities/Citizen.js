@@ -1,0 +1,309 @@
+/**
+ * Citizen - Entità cittadino che visita il circolo
+ *
+ * Rappresenta un cittadino che entra nel circolo, si interessa a una tematica,
+ * decide se convertirsi o meno, e poi esce.
+ *
+ * Stati possibili:
+ * - 'toDesk': Si sta muovendo verso un banco informativo
+ * - 'leave': Sta uscendo dal circolo
+ *
+ * @module entities/Citizen
+ */
+
+import { RevolutionConfig, RevolutionUtils } from '../core/RevolutionConfig.js';
+
+export class Citizen {
+  /**
+   * Crea un nuovo cittadino
+   * @param {object} options - Opzioni di inizializzazione
+   * @param {number} options.x - Posizione X iniziale
+   * @param {number} options.y - Posizione Y iniziale
+   * @param {object} options.targetDesk - Banco informativo target
+   * @param {number} options.topicIndex - Indice della tematica di interesse
+   * @param {object} options.type - Tipo di cittadino dalla configurazione
+   * @param {number} [options.mood=0.5] - Umore (0-1)
+   * @param {number} [options.patience=10] - Pazienza in secondi
+   */
+  constructor(options) {
+    // Posizione
+    this.x = options.x;
+    this.y = options.y;
+    this.vx = 0;
+    this.vy = 0;
+
+    // Tipo di cittadino
+    this.type = options.type;
+    this.icon = this.type.icon;
+
+    // Apparenza
+    this.r = RevolutionConfig.CITIZEN.BASE_RADIUS + Math.random() * RevolutionConfig.CITIZEN.RADIUS_VARIANCE;
+
+    // Stato
+    this.state = 'toDesk';
+    this.timeAlive = 0;
+
+    // Target
+    this.targetDesk = options.targetDesk;
+    this.topicIndex = options.topicIndex;
+
+    // Comportamento (influenzato dal tipo)
+    this.receptivity = this.type.receptivity;
+    this.mood = options.mood !== undefined ? options.mood : Math.random();
+    this.patience = options.patience !== undefined ? options.patience : 10;
+    this.speed = this.type.speed || (RevolutionConfig.CITIZEN.BASE_SPEED + Math.random() * RevolutionConfig.CITIZEN.SPEED_VARIANCE);
+
+    // Influenza che dona se converte
+    this.influenceValue = this.type.influence;
+
+    // Uscita
+    this.exitChoice = null;
+    this.leaveTimer = 0;
+
+    // Conversione
+    this.converted = false;
+  }
+
+  /**
+   * Aggiorna il cittadino
+   * @param {number} dt - Delta time in secondi
+   */
+  update(dt) {
+    this.timeAlive += dt;
+
+    // Timeout: dopo 2 minuti il cittadino se ne va
+    if (this.timeAlive > 120) {
+      this.state = 'leave';
+    }
+  }
+
+  /**
+   * Aggiorna la logica nello stato 'toDesk'
+   * @param {number} dt - Delta time
+   * @param {object} targetPos - Posizione target {x, y}
+   * @param {object} topic - Tematica del banco
+   * @param {number} consciousness - Coscienza di classe globale
+   * @returns {object} Risultato dell'update
+   */
+  updateToDesk(dt, targetPos, topic, consciousness) {
+    if (!this.targetDesk) {
+      this.state = 'leave';
+      return { action: 'leave', reason: 'no_desk' };
+    }
+
+    const dist = Math.hypot(this.x - targetPos.x, this.y - targetPos.y);
+
+    // Perde pazienza (più veloce se no materiale)
+    const patienceLoss = topic && topic.stock <= 0 ? dt * 1.8 : dt * 0.5;
+    this.patience -= patienceLoss;
+
+    // Pazienza finita
+    if (this.patience <= 0) {
+      this.state = 'leave';
+      return { action: 'leave', reason: 'impatient' };
+    }
+
+    // Raggiunto banco
+    if (dist < 12) {
+      return this.tryConvert(topic, consciousness);
+    }
+
+    return { action: 'moving' };
+  }
+
+  /**
+   * Tenta di convertire il cittadino
+   * @param {object} topic - Tematica
+   * @param {number} consciousness - Coscienza di classe globale
+   * @returns {object} Risultato della conversione
+   */
+  tryConvert(topic, consciousness) {
+    if (!topic) {
+      this.state = 'leave';
+      return { action: 'leave', reason: 'no_topic' };
+    }
+
+    // Stock esaurito (no materiale informativo)
+    if (topic.stock <= 0) {
+      this.state = 'leave';
+      return {
+        action: 'leave',
+        reason: 'no_material',
+        consciousness: RevolutionConfig.CONSCIOUSNESS.NO_MATERIAL,
+      };
+    }
+
+    // Calcola probabilità di conversione
+    const conversionProb = RevolutionUtils.getConversionProbability(
+      topic,
+      this.type,
+      consciousness
+    );
+
+    // Considera anche il mood
+    const finalProb = conversionProb * (0.7 + this.mood * 0.3);
+
+    if (Math.random() < finalProb) {
+      // CONVERTITO! 🚩
+      this.converted = true;
+      this.state = 'leave';
+      return {
+        action: 'convert',
+        topic: topic,
+        influence: this.influenceValue,
+        consciousness: this.mood > 0.7 
+          ? RevolutionConfig.CONSCIOUSNESS.CONVERT_HAPPY 
+          : RevolutionConfig.CONSCIOUSNESS.CONVERT_NEUTRAL,
+      };
+    } else {
+      // Non convince
+      const tooRadical = topic.appeal > RevolutionConfig.APPEAL.RADICAL_THRESHOLD;
+      this.state = 'leave';
+      return {
+        action: 'leave',
+        reason: tooRadical ? 'too_radical' : 'not_convinced',
+        consciousness: tooRadical 
+          ? RevolutionConfig.CONSCIOUSNESS.TOO_RADICAL 
+          : RevolutionConfig.CONSCIOUSNESS.LEAVE_UNINTERESTED,
+      };
+    }
+  }
+
+  /**
+   * Aggiorna la logica nello stato 'leave'
+   * @param {number} dt - Delta time
+   * @param {number} canvasWidth - Larghezza canvas
+   * @param {number} canvasHeight - Altezza canvas
+   * @returns {string|null} 'remove' se deve essere rimosso
+   */
+  updateLeave(dt, canvasWidth, canvasHeight) {
+    // Seleziona uscita
+    if (!this.exitChoice) {
+      this.exitChoice = Math.random() < 0.8 ? 'entrance' : 'emergency';
+    }
+
+    // Timeout sicurezza
+    this.leaveTimer += dt;
+    if (this.leaveTimer > 5) {
+      return 'remove';
+    }
+
+    // Fuori dal canvas
+    if (this.x < -40 || this.x > canvasWidth + 40 || 
+        this.y < -40 || this.y > canvasHeight + 40) {
+      return 'remove';
+    }
+
+    return null;
+  }
+
+  /**
+   * Calcola posizione target per l'uscita
+   * @param {number} canvasWidth - Larghezza canvas
+   * @param {number} canvasHeight - Altezza canvas
+   * @returns {object} Posizione {x, y}
+   */
+  getExitTarget(canvasWidth, canvasHeight) {
+    const W = canvasWidth;
+    const H = canvasHeight;
+
+    if (this.exitChoice === 'entrance') {
+      const entranceX = 70;
+      const entranceY = H - 40;
+
+      if (Math.hypot(this.x - entranceX, this.y - entranceY) > 30) {
+        return { x: entranceX, y: entranceY };
+      } else {
+        return {
+          x: Math.random() < 0.5 ? -30 : 70,
+          y: H + 30,
+        };
+      }
+    } else {
+      // Uscita emergenza (bordo più vicino)
+      const distToLeft = this.x;
+      const distToRight = W - this.x;
+      const distToTop = this.y;
+      const distToBottom = H - this.y;
+
+      const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+
+      if (minDist === distToLeft) return { x: -30, y: this.y };
+      if (minDist === distToRight) return { x: W + 30, y: this.y };
+      if (minDist === distToTop) return { x: this.x, y: -30 };
+      return { x: this.x, y: H + 30 };
+    }
+  }
+
+  /**
+   * Muove il cittadino verso target
+   * @param {number} targetX - X target
+   * @param {number} targetY - Y target
+   * @param {number} speed - Velocità
+   * @param {number} dt - Delta time
+   */
+  moveToward(targetX, targetY, speed, dt) {
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 0.1) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+
+      this.vx = nx * speed;
+      this.vy = ny * speed;
+
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+    }
+  }
+
+  /**
+   * Ottiene il colore basato su receptivity e mood
+   * @returns {string} Colore CSS
+   */
+  getColor() {
+    return RevolutionUtils.getCitizenColor(this.receptivity, this.mood);
+  }
+
+  /**
+   * Serializza per salvataggio
+   */
+  toSaveData() {
+    return {
+      x: this.x,
+      y: this.y,
+      typeId: this.type.id,
+      state: this.state,
+      topicIndex: this.topicIndex,
+      mood: this.mood,
+      patience: this.patience,
+      converted: this.converted,
+      timeAlive: this.timeAlive,
+    };
+  }
+
+  /**
+   * Carica da salvataggio
+   */
+  static fromSaveData(data, phaseConfig) {
+    const type = phaseConfig.citizenTypes.find(t => t.id === data.typeId);
+    
+    const citizen = new Citizen({
+      x: data.x,
+      y: data.y,
+      targetDesk: null,
+      topicIndex: data.topicIndex,
+      type: type,
+      mood: data.mood,
+      patience: data.patience,
+    });
+
+    citizen.state = data.state;
+    citizen.converted = data.converted;
+    citizen.timeAlive = data.timeAlive;
+
+    return citizen;
+  }
+}

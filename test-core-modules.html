@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test GameState Module</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    h2 { color: #666; margin-top: 0; }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .test-pass {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+    .test-fail {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #0056b3; }
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Moduli Core - Shop Tycoon</h1>
+  
+  <div class="test-section">
+    <h2>Test GameState</h2>
+    <button onclick="testGameState()">Esegui Test GameState</button>
+    <div id="gamestate-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test SaveManager</h2>
+    <button onclick="testSaveManager()">Esegui Test SaveManager</button>
+    <div id="savemanager-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Config</h2>
+    <button onclick="testConfig()">Esegui Test Config</button>
+    <div id="config-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Integrazione</h2>
+    <button onclick="testIntegration()">Esegui Test Integrazione</button>
+    <div id="integration-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Client Entity</h2>
+    <button onclick="testClient()">Esegui Test Client</button>
+    <div id="client-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test SpawnSystem</h2>
+    <button onclick="testSpawnSystem()">Esegui Test SpawnSystem</button>
+    <div id="spawnsystem-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Product Entity</h2>
+    <button onclick="testProduct()">Esegui Test Product</button>
+    <div id="product-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Shelf Entity</h2>
+    <button onclick="testShelf()">Esegui Test Shelf</button>
+    <div id="shelf-results"></div>
+  </div>
+
+  <script type="module">
+    import { GameState } from './src/core/GameState.js';
+    import { SaveManager } from './src/core/SaveManager.js';
+    import { Config, ConfigUtils } from './src/core/Config.js';
+    import { Client } from './src/entities/Client.js';
+    import { Product } from './src/entities/Product.js';
+    import { Shelf } from './src/entities/Shelf.js';
+    import { SpawnSystem } from './src/systems/SpawnSystem.js';
+
+    // Rendi disponibili globalmente per i bottoni
+    window.GameState = GameState;
+    window.SaveManager = SaveManager;
+    window.Config = Config;
+    window.ConfigUtils = ConfigUtils;
+    window.Client = Client;
+    window.Product = Product;
+    window.Shelf = Shelf;
+    window.SpawnSystem = SpawnSystem;
+
+    function assert(condition, message) {
+      if (condition) {
+        return `<div class="test-result test-pass">✓ PASS: ${message}</div>`;
+      } else {
+        return `<div class="test-result test-fail">✗ FAIL: ${message}</div>`;
+      }
+    }
+
+    window.testGameState = function() {
+      const results = [];
+      const state = new GameState();
+
+      // Test 1: Inizializzazione
+      results.push(assert(state.money === 150, 'Stato inizializzato con money = 150'));
+      results.push(assert(state.satisfaction === 50, 'Soddisfazione iniziale = 50'));
+      results.push(assert(state.clients.length === 0, 'Nessun cliente all\'inizio'));
+
+      // Test 2: initShop
+      state.initShop();
+      results.push(assert(state.products.length === 4, 'initShop crea 4 prodotti'));
+      results.push(assert(state.shelves.length === 4, 'initShop crea 4 scaffali'));
+
+      // Test 3: addMoney
+      state.addMoney(50);
+      results.push(assert(state.money === 200, 'addMoney(50) porta a 200'));
+
+      // Test 4: spendMoney successo
+      const spent = state.spendMoney(30);
+      results.push(assert(spent === true, 'spendMoney(30) ritorna true'));
+      results.push(assert(state.money === 170, 'Denaro corretto dopo spesa (170)'));
+
+      // Test 5: spendMoney fallimento
+      const failSpent = state.spendMoney(1000);
+      results.push(assert(failSpent === false, 'spendMoney(1000) ritorna false (soldi insufficienti)'));
+      results.push(assert(state.money === 170, 'Denaro non cambiato dopo spesa fallita'));
+
+      // Test 6: updateTime
+      state.updateTime(1.5);
+      results.push(assert(state.time === 1.5, 'updateTime aggiorna correttamente il tempo'));
+
+      // Test 7: updateSatisfaction
+      state.updateSatisfaction(10, 'test');
+      results.push(assert(state.satisfaction === 60, 'Soddisfazione aumenta correttamente'));
+      results.push(assert(state.satisfactionHistory.length === 1, 'History traccia il cambiamento'));
+
+      // Test 8: updateMarketingPower
+      state.updateMarketingPower(30);
+      results.push(assert(state.marketingPower === 30, 'Marketing power aggiornato'));
+      results.push(assert(state.maxMarketingPower === 30, 'Max marketing power aggiornato'));
+
+      // Test 9: addLog
+      state.addLog('Test log');
+      results.push(assert(state.logLines.length === 2, 'Log aggiunto (2 total con satisfaction log)'));
+      results.push(assert(state.logLines[0] === 'Test log', 'Log corretto in cima'));
+
+      // Test 10: getStats
+      const stats = state.getStats();
+      results.push(assert(stats.money === '170.00', 'Stats money formattato correttamente'));
+      results.push(assert(stats.clients === 0, 'Stats clients corretto'));
+
+      document.getElementById('gamestate-results').innerHTML = results.join('');
+    };
+
+    window.testSaveManager = function() {
+      const results = [];
+      const state = new GameState();
+      state.initShop();
+      state.money = 500;
+      state.time = 100;
+
+      const saveManager = new SaveManager(state);
+
+      // Test 1: Salvataggio
+      const saved = saveManager.save();
+      results.push(assert(saved === true, 'Salvataggio completato'));
+
+      // Test 2: Verifica esistenza save
+      const hasSave = saveManager.hasSave();
+      results.push(assert(hasSave === true, 'hasSave() rileva il salvataggio'));
+
+      // Test 3: Caricamento
+      const newState = new GameState();
+      const newSaveManager = new SaveManager(newState);
+      const loaded = newSaveManager.load();
+      results.push(assert(loaded === true, 'Caricamento completato'));
+      results.push(assert(newState.money === 500, 'Money caricato correttamente'));
+      results.push(assert(newState.time === 100, 'Time caricato correttamente'));
+
+      // Test 4: Export
+      const exported = saveManager.exportSave();
+      results.push(assert(exported.includes('500') && exported.includes('money'), 'Export contiene i dati corretti'));
+
+      // Test 5: Reset
+      saveManager.reset();
+      results.push(assert(state.money === 150, 'Reset riporta money a 150'));
+      results.push(assert(!saveManager.hasSave(), 'Reset elimina il salvataggio'));
+
+      document.getElementById('savemanager-results').innerHTML = results.join('');
+    };
+
+    window.testConfig = function() {
+      const results = [];
+
+      // Test 1: Costanti base
+      results.push(assert(Config.INITIAL_MONEY === 150, 'INITIAL_MONEY = 150'));
+      results.push(assert(Config.DEFAULT_PRODUCTS.length === 4, '4 prodotti di default'));
+
+      // Test 2: getExpansionCost
+      const cost1 = ConfigUtils.getExpansionCost(50);
+      results.push(assert(cost1 === 100, 'Primo expansion cost = 100'));
+
+      const cost2 = ConfigUtils.getExpansionCost(60);
+      results.push(assert(cost2 === 150, 'Secondo expansion cost = 150'));
+
+      // Test 3: getMarkup
+      const product = { price: 6, cost: 2 };
+      const markup = ConfigUtils.getMarkup(product);
+      results.push(assert(markup === 200, 'Markup calcolato correttamente (200%)'));
+
+      // Test 4: evaluatePrice
+      const lowPrice = { price: 2.5, cost: 2 };      // markup = 25% < 80%
+      const idealPrice = { price: 4.2, cost: 2 };    // markup = 110% (ideal: 80-120)
+      const highPrice = { price: 4.8, cost: 2 };     // markup = 140% (high: 120-150)
+      const veryHighPrice = { price: 6, cost: 2 };   // markup = 200% (very high: >150)
+
+      const idealEval = ConfigUtils.evaluatePrice(idealPrice);
+      const idealMarkup = ConfigUtils.getMarkup(idealPrice);
+      results.push(assert(idealEval === 'ideal', `Prezzo ideale riconosciuto (markup: ${idealMarkup.toFixed(0)}%, eval: ${idealEval})`));
+      
+      results.push(assert(ConfigUtils.evaluatePrice(lowPrice) === 'low', 'Prezzo basso riconosciuto'));
+      results.push(assert(ConfigUtils.evaluatePrice(highPrice) === 'high', 'Prezzo alto riconosciuto'));
+      results.push(assert(ConfigUtils.evaluatePrice(veryHighPrice) === 'very_high', 'Prezzo molto alto riconosciuto'));
+
+      // Test 5: getBuyProbability
+      const prob1 = ConfigUtils.getBuyProbability(idealPrice, 0.8);
+      results.push(assert(prob1 >= 0.8, `Alta probabilità per prezzo ideale e mood alto (prob: ${prob1.toFixed(2)})`));
+
+      const prob2 = ConfigUtils.getBuyProbability(veryHighPrice, 0.2);
+      results.push(assert(prob2 < 0.2, 'Bassa probabilità per prezzo molto alto e mood basso'));
+
+      document.getElementById('config-results').innerHTML = results.join('');
+    };
+
+    window.testIntegration = function() {
+      const results = [];
+
+      // Test scenario completo
+      const state = new GameState();
+      state.initShop();
+      const saveManager = new SaveManager(state);
+
+      // Simula una sessione di gioco
+      state.addMoney(100); // Guadagna soldi
+      state.updateTime(10); // 10 secondi passati
+      state.updateSatisfaction(5, 'Cliente felice');
+      state.updateMarketingPower(20);
+
+      // Modifica un prodotto
+      state.products[0].price = 5;
+      state.products[0].stock = 8;
+
+      // Salva
+      saveManager.save();
+      results.push(assert(true, 'Scenario di gioco salvato'));
+
+      // Crea nuova sessione e carica
+      const newState = new GameState();
+      const newSaveManager = new SaveManager(newState);
+      newSaveManager.load();
+
+      // Verifica che tutto sia stato caricato
+      results.push(assert(newState.money === 250, 'Money caricato (250)'));
+      results.push(assert(newState.time === 10, 'Time caricato (10)'));
+      results.push(assert(newState.satisfaction === 55, 'Satisfaction caricato (55)'));
+      results.push(assert(newState.marketingPower === 20, 'Marketing power caricato (20)'));
+      results.push(assert(newState.products[0].price === 5, 'Prezzo prodotto caricato (5)'));
+      results.push(assert(newState.products[0].stock === 8, 'Stock prodotto caricato (8)'));
+
+      // Test utilizzo Config con GameState
+      const markup = ConfigUtils.getMarkup(newState.products[0]);
+      const evaluation = ConfigUtils.evaluatePrice(newState.products[0]);
+      results.push(assert(markup > 100, `Markup prodotto calcolato: ${markup.toFixed(0)}%`));
+      results.push(assert(evaluation !== '', `Valutazione prezzo: ${evaluation}`));
+
+      // Cleanup
+      saveManager.reset();
+
+      document.getElementById('integration-results').innerHTML = results.join('');
+    };
+
+    window.testClient = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const client1 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: { x: 200, y: 200, w: 100, h: 40, productIndex: 0 },
+        productIndex: 0,
+        mood: 0.8,
+        patience: 10
+      });
+      
+      results.push(assert(client1.x === 100, 'Cliente creato con x corretta'));
+      results.push(assert(client1.y === 100, 'Cliente creato con y corretta'));
+      results.push(assert(client1.state === 'toShelf', 'Stato iniziale è toShelf'));
+      results.push(assert(client1.mood === 0.8, 'Mood impostato correttamente'));
+      results.push(assert(client1.patience === 10, 'Patience impostata correttamente'));
+
+      // Test 2: Update base
+      client1.update(1.0);
+      results.push(assert(client1.timeAlive === 1.0, 'timeAlive incrementato dopo update'));
+
+      // Test 3: Timeout
+      const client2 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: null,
+        productIndex: 0
+      });
+      client2.timeAlive = 121;
+      client2.update(1.0);
+      results.push(assert(client2.state === 'leave', 'Cliente va in leave dopo 120 secondi'));
+
+      // Test 4: tryBuy - successo con mood alto
+      const product = { name: 'Test', price: 5, cost: 2, stock: 10 };
+      const client3 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: {},
+        productIndex: 0,
+        mood: 1.0
+      });
+      
+      let buyCount = 0;
+      for (let i = 0; i < 10; i++) {
+        const client = new Client({
+          x: 100, y: 100, targetShelf: {}, productIndex: 0, mood: 1.0
+        });
+        const result = client.tryBuy(product);
+        if (result.action === 'buy') buyCount++;
+      }
+      results.push(assert(buyCount > 0, `Cliente con mood alto compra (${buyCount}/10 tentativi)`));
+
+      // Test 5: tryBuy - stock esaurito
+      const client4 = new Client({
+        x: 100,
+        y: 100,
+        targetShelf: {},
+        productIndex: 0,
+        mood: 1.0
+      });
+      const emptyProduct = { name: 'Test', price: 5, cost: 2, stock: 0 };
+      const result4 = client4.tryBuy(emptyProduct);
+      results.push(assert(result4.action === 'leave', 'Cliente esce se stock è 0'));
+      results.push(assert(result4.reason === 'out_of_stock', 'Reason corretto per stock vuoto'));
+      results.push(assert(result4.satisfaction === -2, 'Satisfaction negativa per stock vuoto'));
+
+      // Test 6: getExitTarget - entrance
+      const client5 = new Client({
+        x: 400,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client5.state = 'leave';
+      client5.exitChoice = 'entrance';
+      const exit5 = client5.getExitTarget(800, 600);
+      results.push(assert(exit5.x !== undefined && exit5.y !== undefined, 'getExitTarget ritorna posizione valida'));
+
+      // Test 7: getExitTarget - emergency (bordo sinistro)
+      const client6 = new Client({
+        x: 50,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client6.state = 'leave';
+      client6.exitChoice = 'emergency';
+      const exit6 = client6.getExitTarget(800, 600);
+      results.push(assert(exit6.x === -30, 'Emergency exit va al bordo più vicino (sinistra)'));
+
+      // Test 8: moveToward
+      const client7 = new Client({
+        x: 0,
+        y: 0,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client7.moveToward(100, 0, 100, 1.0);
+      results.push(assert(client7.x > 50, 'moveToward sposta il cliente sulla X'));
+      results.push(assert(Math.abs(client7.x - 100) < 5, 'moveToward raggiunge circa il target'));
+
+      // Test 9: getColor
+      const happyClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.9
+      });
+      const neutralClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.5
+      });
+      const unhappyClient = new Client({
+        x: 0, y: 0, targetShelf: {}, productIndex: 0, mood: 0.1
+      });
+      
+      results.push(assert(happyClient.getColor() === Config.COLORS.CLIENT_HAPPY, 'Cliente felice ha colore verde'));
+      results.push(assert(neutralClient.getColor() === Config.COLORS.CLIENT_NEUTRAL, 'Cliente neutrale ha colore arancione'));
+      results.push(assert(unhappyClient.getColor() === Config.COLORS.CLIENT_UNHAPPY, 'Cliente infelice ha colore rosso'));
+
+      // Test 10: Serializzazione
+      const client8 = new Client({
+        x: 123,
+        y: 456,
+        targetShelf: { test: true },
+        productIndex: 2,
+        mood: 0.7,
+        patience: 8
+      });
+      const saveData = client8.toSaveData();
+      results.push(assert(saveData.x === 123, 'toSaveData salva x'));
+      results.push(assert(saveData.y === 456, 'toSaveData salva y'));
+      results.push(assert(saveData.mood === 0.7, 'toSaveData salva mood'));
+      
+      const loaded = Client.fromSaveData(saveData);
+      results.push(assert(loaded.x === 123, 'fromSaveData ripristina x'));
+      results.push(assert(loaded.y === 456, 'fromSaveData ripristina y'));
+      results.push(assert(loaded.mood === 0.7, 'fromSaveData ripristina mood'));
+
+      // Test 11: updateLeave con timeout
+      const client9 = new Client({
+        x: 400,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client9.state = 'leave';
+      client9.leaveTimer = 6;
+      const removeResult = client9.updateLeave(0.1, 800, 600);
+      results.push(assert(removeResult === 'remove', 'Cliente rimosso dopo timeout di 5 secondi'));
+
+      // Test 12: updateLeave fuori canvas
+      const client10 = new Client({
+        x: -50,
+        y: 300,
+        targetShelf: {},
+        productIndex: 0
+      });
+      client10.state = 'leave';
+      const removeResult2 = client10.updateLeave(0.1, 800, 600);
+      results.push(assert(removeResult2 === 'remove', 'Cliente rimosso quando esce dal canvas'));
+
+      document.getElementById('client-results').innerHTML = results.join('');
+    };
+
+    window.testSpawnSystem = function() {
+      const results = [];
+      
+      // Setup: crea GameState e SpawnSystem
+      const state = new GameState();
+      state.initShop();
+      const spawnSystem = new SpawnSystem(state);
+
+      // Test 1: Inizializzazione
+      results.push(assert(spawnSystem.gameState === state, 'SpawnSystem collegato al GameState'));
+      results.push(assert(spawnSystem.spawnTimer === 0, 'Timer inizializzato a 0'));
+
+      // Test 2: getSpawnPosition
+      const pos1 = spawnSystem.getSpawnPosition(800, 600);
+      results.push(assert(pos1.x !== undefined && pos1.y !== undefined, 'getSpawnPosition ritorna posizione valida'));
+      results.push(assert(pos1.y === 610 || pos1.y > 520, 'Spawn position nell\'area entrata (basso o sinistra)'));
+
+      // Test 3: calculateClientMood - soddisfazione alta
+      state.satisfaction = 80;
+      state.clients = [];
+      const moodHigh = spawnSystem.calculateClientMood();
+      results.push(assert(moodHigh > 0.5, `Mood alto con satisfaction 80 (mood: ${moodHigh.toFixed(2)})`));
+
+      // Test 4: calculateClientMood - soddisfazione bassa
+      state.satisfaction = 20;
+      const moodLow = spawnSystem.calculateClientMood();
+      results.push(assert(moodLow < moodHigh, 'Mood più basso con satisfaction bassa'));
+
+      // Test 5: calculateClientPatience - negozio vuoto
+      state.clients = [];
+      state.clientCap = 50;
+      const patienceEmpty = spawnSystem.calculateClientPatience();
+      results.push(assert(patienceEmpty >= Config.CLIENT.BASE_PATIENCE_MIN, 'Pazienza minima rispettata'));
+      results.push(assert(patienceEmpty <= Config.CLIENT.BASE_PATIENCE_MAX, 'Pazienza massima rispettata'));
+
+      // Test 6: calculateClientPatience - negozio affollato
+      state.clients = new Array(40).fill({}); // 40/50 = 80% pieno
+      const patienceCrowded = spawnSystem.calculateClientPatience();
+      results.push(assert(patienceCrowded < patienceEmpty, 'Pazienza ridotta con affollamento'));
+
+      // Test 7: getMarketingFactor
+      state.marketingPower = 0;
+      const marketingMin = spawnSystem.getMarketingFactor();
+      results.push(assert(marketingMin === 0.5, 'Marketing factor minimo = 0.5'));
+
+      state.marketingPower = 100;
+      const marketingMax = spawnSystem.getMarketingFactor();
+      results.push(assert(marketingMax === 2.0, 'Marketing factor massimo = 2.0'));
+
+      // Test 8: getSatisfactionFactor
+      state.satisfaction = 0;
+      const satMin = spawnSystem.getSatisfactionFactor();
+      results.push(assert(satMin === 0.3, 'Satisfaction factor minimo = 0.3'));
+
+      state.satisfaction = 100;
+      const satMax = spawnSystem.getSatisfactionFactor();
+      results.push(assert(satMax === 1.5, 'Satisfaction factor massimo = 1.5'));
+
+      // Test 9: getPriceAttractiveness - prezzi bassi
+      state.products = [
+        { name: 'Test1', price: 3, cost: 2, stock: 10 }, // markup = 0.5 (50%)
+      ];
+      const priceAttrLow = spawnSystem.getPriceAttractiveness();
+      results.push(assert(priceAttrLow > 0.7, `Prezzi bassi = alta attrattività (${priceAttrLow.toFixed(2)})`));
+
+      // Test 10: getPriceAttractiveness - prezzi alti
+      state.products = [
+        { name: 'Test1', price: 10, cost: 2, stock: 10 }, // markup = 4.0 (400%)
+      ];
+      const priceAttrHigh = spawnSystem.getPriceAttractiveness();
+      results.push(assert(priceAttrHigh < 0.5, `Prezzi alti = bassa attrattività (${priceAttrHigh.toFixed(2)})`));
+
+      // Test 11: getSpawnMultiplier - condizioni pessime
+      state.marketingPower = 0;
+      state.satisfaction = 0;
+      state.products = [{ name: 'Test', price: 20, cost: 2, stock: 10 }];
+      const multMin = spawnSystem.getSpawnMultiplier();
+      results.push(assert(multMin < 0.3, `Spawn multiplier basso con condizioni pessime (${multMin.toFixed(2)})`));
+
+      // Test 12: getSpawnMultiplier - condizioni ottime
+      state.marketingPower = 100;
+      state.satisfaction = 100;
+      state.products = [{ name: 'Test', price: 3, cost: 2, stock: 10 }];
+      const multMax = spawnSystem.getSpawnMultiplier();
+      results.push(assert(multMax > 2.0, `Spawn multiplier alto con condizioni ottime (${multMax.toFixed(2)})`));
+
+      // Test 13: spawnClient
+      state.clients = [];
+      state.satisfaction = 50;
+      const client = spawnSystem.spawnClient(800, 600);
+      results.push(assert(client !== null, 'spawnClient crea un cliente'));
+      results.push(assert(state.clients.length === 1, 'Cliente aggiunto alla lista'));
+      results.push(assert(client instanceof Client, 'Cliente è istanza di Client'));
+
+      // Test 14: spawnClient con targetShelf
+      results.push(assert(client.targetShelf !== undefined, 'Cliente ha targetShelf'));
+      results.push(assert(client.productIndex >= 0 && client.productIndex < state.products.length, 'ProductIndex valido'));
+
+      // Test 15: update - spawn nel tempo
+      state.clients = [];
+      state.satisfaction = 80;
+      state.marketingPower = 50;
+      state.spawnInterval = 2.0;
+      spawnSystem.reset();
+      
+      // Simula 3 secondi con update multipli
+      const updates = 30; // 30 update da 0.1s = 3 secondi
+      for (let i = 0; i < updates; i++) {
+        spawnSystem.update(0.1, 800, 600);
+      }
+      
+      results.push(assert(state.clients.length > 0, `Clienti spawati dopo 3 secondi (${state.clients.length} clienti)`));
+
+      // Test 16: update - rispetta clientCap
+      state.clients = new Array(state.clientCap).fill({});
+      const beforeCount = state.clients.length;
+      spawnSystem.update(10, 800, 600); // Forza spawn
+      results.push(assert(state.clients.length === beforeCount, 'Non spawna oltre clientCap'));
+
+      // Test 17: getStats
+      const stats = spawnSystem.getStats();
+      results.push(assert(stats.spawnMultiplier !== undefined, 'getStats ritorna spawnMultiplier'));
+      results.push(assert(stats.marketingFactor !== undefined, 'getStats ritorna marketingFactor'));
+      results.push(assert(stats.priceFactor !== undefined, 'getStats ritorna priceFactor'));
+
+      // Test 18: reset
+      spawnSystem.spawnTimer = 5.0;
+      spawnSystem.reset();
+      results.push(assert(spawnSystem.spawnTimer === 0, 'reset azzera il timer'));
+
+      document.getElementById('spawnsystem-results').innerHTML = results.join('');
+    };
+
+    window.testProduct = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const product = new Product({
+        name: 'Snack',
+        price: 5,
+        cost: 2,
+        stock: 10
+      });
+      
+      results.push(assert(product.name === 'Snack', 'Nome impostato correttamente'));
+      results.push(assert(product.price === 5, 'Prezzo impostato correttamente'));
+      results.push(assert(product.cost === 2, 'Costo impostato correttamente'));
+      results.push(assert(product.stock === 10, 'Stock impostato correttamente'));
+
+      // Test 2: getProfit
+      const profit = product.getProfit();
+      results.push(assert(profit === 3, 'Profitto calcolato correttamente (5-2=3)'));
+
+      // Test 3: getMarkup
+      const markup = product.getMarkup();
+      results.push(assert(markup === 150, 'Markup calcolato correttamente ((5-2)/2*100=150%)'));
+
+      // Test 4: sell
+      const sellResult = product.sell();
+      results.push(assert(sellResult === true, 'Vendita riuscita con stock disponibile'));
+      results.push(assert(product.stock === 9, 'Stock decrementato dopo vendita'));
+
+      // Test 5: sell con stock 0
+      const emptyProduct = new Product({ name: 'Empty', price: 5, cost: 2, stock: 0 });
+      const sellFail = emptyProduct.sell();
+      results.push(assert(sellFail === false, 'Vendita fallita con stock 0'));
+      results.push(assert(emptyProduct.stock === 0, 'Stock rimane 0 dopo vendita fallita'));
+
+      // Test 6: restock
+      product.restock(5);
+      results.push(assert(product.stock === 14, 'Restock aggiunge quantità (9+5=14)'));
+
+      // Test 7: setPrice
+      product.setPrice(10);
+      results.push(assert(product.price === 10, 'setPrice cambia il prezzo'));
+
+      // Test 8: setPrice sotto costo
+      product.setPrice(1);
+      results.push(assert(product.price === 2, 'setPrice non scende sotto il costo'));
+
+      // Test 9: increasePrice / decreasePrice
+      product.increasePrice(3);
+      results.push(assert(product.price === 5, 'increasePrice aumenta il prezzo (2+3=5)'));
+      
+      product.decreasePrice(1);
+      results.push(assert(product.price === 4, 'decreasePrice diminuisce il prezzo (5-1=4)'));
+
+      // Test 10: isOutOfStock
+      results.push(assert(product.isOutOfStock() === false, 'isOutOfStock false con stock > 0'));
+      results.push(assert(emptyProduct.isOutOfStock() === true, 'isOutOfStock true con stock 0'));
+
+      // Test 11: isLowStock
+      const lowProduct = new Product({ name: 'Low', price: 5, cost: 2, stock: 3 });
+      results.push(assert(lowProduct.isLowStock() === true, 'isLowStock true con stock < 5'));
+      results.push(assert(product.isLowStock() === false, 'isLowStock false con stock >= 5'));
+
+      // Test 12: getStockStatus
+      results.push(assert(emptyProduct.getStockStatus() === 'out_of_stock', 'Status corretto per stock 0'));
+      results.push(assert(lowProduct.getStockStatus() === 'low_stock', 'Status corretto per stock basso'));
+      results.push(assert(product.getStockStatus() === 'in_stock', 'Status corretto per stock normale'));
+
+      // Test 13: getRestockCost
+      const restockCost = product.getRestockCost(10);
+      results.push(assert(restockCost === 20, 'Costo restock calcolato (10*2=20)'));
+
+      // Test 14: getStockValue
+      const stockValue = product.getStockValue();
+      results.push(assert(stockValue === 28, `Valore stock calcolato (14*2=${stockValue})`));
+
+      // Test 15: getPotentialProfit
+      const potentialProfit = product.getPotentialProfit();
+      const expected = 14 * (product.price - product.cost);
+      results.push(assert(potentialProfit === expected, `Profitto potenziale calcolato (${expected})`));
+
+      // Test 16: getStats
+      const stats = product.getStats();
+      results.push(assert(stats.name === 'Snack', 'getStats contiene nome'));
+      results.push(assert(stats.stock === 14, 'getStats contiene stock'));
+      results.push(assert(stats.stockStatus === 'in_stock', 'getStats contiene status'));
+
+      // Test 17: Serializzazione
+      const saveData = product.toSaveData();
+      results.push(assert(saveData.name === 'Snack', 'toSaveData salva nome'));
+      results.push(assert(saveData.price === 4, 'toSaveData salva prezzo'));
+      results.push(assert(saveData.stock === 14, 'toSaveData salva stock'));
+
+      const loaded = Product.fromSaveData(saveData);
+      results.push(assert(loaded.name === 'Snack', 'fromSaveData ripristina nome'));
+      results.push(assert(loaded.price === 4, 'fromSaveData ripristina prezzo'));
+
+      // Test 18: clone
+      const cloned = product.clone();
+      results.push(assert(cloned.name === product.name, 'clone copia il nome'));
+      results.push(assert(cloned.price === product.price, 'clone copia il prezzo'));
+      results.push(assert(cloned !== product, 'clone crea una nuova istanza'));
+
+      document.getElementById('product-results').innerHTML = results.join('');
+    };
+
+    window.testShelf = function() {
+      const results = [];
+
+      // Test 1: Creazione base
+      const shelf = new Shelf({
+        x: 100,
+        y: 200,
+        w: 120,
+        h: 40,
+        productIndex: 0
+      });
+      
+      results.push(assert(shelf.x === 100, 'X impostata correttamente'));
+      results.push(assert(shelf.y === 200, 'Y impostata correttamente'));
+      results.push(assert(shelf.w === 120, 'Width impostata correttamente'));
+      results.push(assert(shelf.h === 40, 'Height impostata correttamente'));
+      results.push(assert(shelf.productIndex === 0, 'ProductIndex impostato correttamente'));
+
+      // Test 2: getCenter
+      const center = shelf.getCenter();
+      results.push(assert(center.x === 160, 'Centro X calcolato (100+120/2=160)'));
+      results.push(assert(center.y === 220, 'Centro Y calcolato (200+40/2=220)'));
+
+      // Test 3: getRandomPoint
+      const randomPoint = shelf.getRandomPoint();
+      results.push(assert(randomPoint.x !== undefined, 'getRandomPoint ritorna X'));
+      results.push(assert(randomPoint.y !== undefined, 'getRandomPoint ritorna Y'));
+
+      // Test 4: contains
+      results.push(assert(shelf.contains(160, 220) === true, 'contains true per punto nel centro'));
+      results.push(assert(shelf.contains(50, 50) === false, 'contains false per punto fuori'));
+
+      // Test 5: distanceFrom
+      const dist = shelf.distanceFrom(160, 220);
+      results.push(assert(dist === 0, 'Distanza 0 dal centro'));
+
+      const dist2 = shelf.distanceFrom(160, 320);
+      results.push(assert(dist2 === 100, 'Distanza 100 da punto lontano'));
+
+      // Test 6: getNearestPoint
+      const nearest = shelf.getNearestPoint(50, 50);
+      results.push(assert(nearest.x === 100, 'Punto più vicino X clamped al bordo'));
+      results.push(assert(nearest.y === 200, 'Punto più vicino Y clamped al bordo'));
+
+      // Test 7: intersects
+      const shelf2 = new Shelf({ x: 150, y: 210, w: 100, h: 50, productIndex: 1 });
+      results.push(assert(shelf.intersects(shelf2) === true, 'intersects true per scaffali sovrapposti'));
+
+      const shelf3 = new Shelf({ x: 300, y: 300, w: 100, h: 50, productIndex: 2 });
+      results.push(assert(shelf.intersects(shelf3) === false, 'intersects false per scaffali distanti'));
+
+      // Test 8: getArea
+      const area = shelf.getArea();
+      results.push(assert(area === 4800, 'Area calcolata (120*40=4800)'));
+
+      // Test 9: getBounds
+      const bounds = shelf.getBounds();
+      results.push(assert(bounds.left === 100, 'Bounds left corretto'));
+      results.push(assert(bounds.right === 220, 'Bounds right corretto (100+120)'));
+      results.push(assert(bounds.top === 200, 'Bounds top corretto'));
+      results.push(assert(bounds.bottom === 240, 'Bounds bottom corretto (200+40)'));
+
+      // Test 10: moveTo
+      shelf.moveTo(300, 400);
+      results.push(assert(shelf.x === 300, 'moveTo cambia X'));
+      results.push(assert(shelf.y === 400, 'moveTo cambia Y'));
+
+      // Test 11: resize
+      shelf.resize(150, 60);
+      results.push(assert(shelf.w === 150, 'resize cambia width'));
+      results.push(assert(shelf.h === 60, 'resize cambia height'));
+
+      // Test 12: resize con valori troppo piccoli
+      shelf.resize(5, 5);
+      results.push(assert(shelf.w === 10, 'resize rispetta minimo width (10px)'));
+      results.push(assert(shelf.h === 10, 'resize rispetta minimo height (10px)'));
+
+      // Test 13: setProduct
+      shelf.setProduct(5);
+      results.push(assert(shelf.productIndex === 5, 'setProduct cambia productIndex'));
+
+      // Test 14: Serializzazione
+      const saveData = shelf.toSaveData();
+      results.push(assert(saveData.x === 300, 'toSaveData salva x'));
+      results.push(assert(saveData.productIndex === 5, 'toSaveData salva productIndex'));
+
+      const loaded = Shelf.fromSaveData(saveData);
+      results.push(assert(loaded.x === 300, 'fromSaveData ripristina x'));
+      results.push(assert(loaded.w === 10, 'fromSaveData ripristina width'));
+
+      // Test 15: clone
+      const cloned = shelf.clone();
+      results.push(assert(cloned.x === shelf.x, 'clone copia x'));
+      results.push(assert(cloned !== shelf, 'clone crea nuova istanza'));
+
+      // Test 16: createDefaultShelves
+      const defaultShelves = Shelf.createDefaultShelves();
+      results.push(assert(defaultShelves.length === 4, 'createDefaultShelves crea 4 scaffali'));
+      results.push(assert(defaultShelves[0] instanceof Shelf, 'Default shelves sono istanze di Shelf'));
+
+      document.getElementById('shelf-results').innerHTML = results.join('');
+    };
+
+    // Auto-run tutti i test all'apertura
+    window.addEventListener('load', () => {
+      console.log('🧪 Test environment ready');
+      console.log('Click sui bottoni per eseguire i test');
+    });
+  </script>
+</body>
+</html>

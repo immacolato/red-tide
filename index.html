@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Shop Tycoon - Prototipo</title>
-<link rel="stylesheet" href="src/style.css">
+<title>Red Tide - The Revolution Simulator</title>
+<link rel="stylesheet" href="src/revolution-style.css">
 </head>
 <body>
 <div id="container">
@@ -12,43 +12,157 @@
     <canvas id="canvas" width="960" height="640"></canvas>
   </div>
   <div id="ui">
+    <!-- HEADER -->
     <div class="header">
       <div>
-        <div>Shop Tycoon - Prototipo</div>
-        <div style="font-size:13px;color:var(--muted)">Visuale top-down, clienti = puntini</div>
+        <div class="game-title">🚩 Red Tide</div>
+        <div class="game-subtitle">The Revolution Simulator</div>
       </div>
-      <div class="money" id="money">€0</div>
-    </div>
-
-    <div class="panel" id="shop-info">
-      <div>Tempo: <span id="time">0</span>s</div>
-      <div>Clienti attivi: <span id="client-count">0</span> / <span id="client-cap">50</span></div>
-      <div>Spawn rate: <span id="spawn-interval">2.0</span>s</div>
-    </div>
-
-    <div class="panel">
-      <div style="font-weight:700;margin-bottom:6px">Prodotti</div>
-      <div id="items-list"></div>
-    </div>
-
-    <div class="panel">
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="marketing">Marketing (€50) - +spawn</button>
-        <button id="restock-all">Rifornisci tutto (€100)</button>
-        <button id="expand">Espandi negozio (€200)</button>
-        <button id="save-game">Salva</button>
-        <button id="load-game">Carica</button>
-        <button id="reset-game">Reset</button>
+      <div class="influence-display">
+        <div class="influence-label">⚡ Influenza</div>
+        <div class="influence" id="influence">0</div>
       </div>
     </div>
 
-    <div class="panel">
-      <div style="font-weight:700;margin-bottom:6px">Log</div>
-      <div id="log"></div>
+    <!-- PHASE INFO -->
+    <div class="phase-info">
+      <div class="phase-name" id="phase-name">FASE 1: IL CIRCOLO</div>
+      <div class="phase-goal">
+        <span id="phase-progress">Obiettivi: Converti 50 cittadini</span>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-label">Tempo</div>
+        <div class="stat-value" id="time">0s</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Cittadini</div>
+        <div class="stat-value"><span id="citizen-count">0</span>/<span id="citizen-cap">20</span></div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">✊</div>
+        <div class="stat-label">Convertiti</div>
+        <div class="stat-value" id="total-converts">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">🤝</div>
+        <div class="stat-label">Compagni</div>
+        <div class="stat-value" id="comrades-count">0</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-label">Spawn Rate</div>
+        <div class="stat-value" id="spawn-interval">2.5s</div>
+      </div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <!-- METRICS -->
+    <div class="panel metrics-panel">
+      <div class="panel-title">📊 Metriche del Movimento</div>
+      
+      <div class="metric">
+        <div class="metric-header">
+          <span class="metric-name">🧠 Coscienza di Classe</span>
+          <span class="metric-value" id="consciousness-value">50%</span>
+        </div>
+        <div class="progress-bar modern">
+          <div class="progress-fill consciousness" id="consciousness-bar" style="width: 50%"></div>
+        </div>
+      </div>
+      
+      <div class="metric">
+        <div class="metric-header">
+          <span class="metric-name">📢 Potere Assembleare</span>
+          <span class="metric-value" id="assembly-value">0%</span>
+        </div>
+        <div class="progress-bar modern">
+          <div class="progress-fill assembly" id="assembly-bar" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TOPICS -->
+    <div class="panel topics-panel">
+      <div class="panel-title">📚 Tematiche Disponibili</div>
+      <div id="topics-list" class="topics-grid"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- COMRADES -->
+    <div class="panel comrades-panel">
+      <div class="panel-title">✊ Compagni</div>
+      <div id="comrades-list" class="comrades-grid"></div>
+      <div class="comrades-available">
+        <div class="panel-subtitle">Assumi nuovi compagni:</div>
+        <div id="available-comrades" class="available-grid"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ACTIONS -->
+    <div class="panel actions-panel">
+      <div class="panel-title">🎯 Azioni</div>
+      <div class="action-buttons">
+        <button id="assembly" class="action-btn primary">
+          <span class="btn-icon">📢</span>
+          <div class="btn-content">
+            <div class="btn-title">Assemblea Pubblica</div>
+            <div class="btn-subtitle"><span id="assembly-cost">30</span> influenza • +25% potenza</div>
+          </div>
+        </button>
+        
+        <button id="restock-all" class="action-btn secondary">
+          <span class="btn-icon">📄</span>
+          <div class="btn-content">
+            <div class="btn-title">Stampa Volantini</div>
+            <div class="btn-subtitle">Rifornisci tutti i materiali</div>
+          </div>
+        </button>
+        
+        <button id="expand" class="action-btn tertiary">
+          <span class="btn-icon">🏗️</span>
+          <div class="btn-content">
+            <div class="btn-title">Sala Più Grande</div>
+            <div class="btn-subtitle"><span id="expand-cost">150</span> influenza</div>
+          </div>
+        </button>
+      </div>
+      
+      <div class="section-separator"></div>
+      
+      <div class="panel-title">⚙️ Strumenti</div>
+      <div class="utility-buttons">
+        <button id="save-game" class="utility-btn">💾 Salva</button>
+        <button id="reset-game" class="utility-btn danger">🔄 Reset</button>
+        <button id="clear-citizens" class="utility-btn" style="display:none">🧹 Clear</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- LOG -->
+    <div class="panel log-panel">
+      <div class="panel-title">📜 Log Attività</div>
+      <div id="log" class="log-content"></div>
     </div>
   </div>
 </div>
 
-<script type="module" src="src/game.js"></script>
+<script type="module" src="src/revolution-main.js"></script>
 </body>
 </html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔄 Confronto V1 vs V2 - Shop Tycoon</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0e1a;
+      color: #fff;
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #1a1f2e;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid #00d4aa;
+    }
+    
+    .header h1 {
+      color: #00d4aa;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      color: #b0b6c3;
+      font-size: 14px;
+    }
+    
+    .controls {
+      background: #252b3d;
+      padding: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .controls button {
+      background: #00d4aa;
+      color: #0a0e1a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .controls button:hover {
+      background: #00e5ba;
+      transform: translateY(-1px);
+    }
+    
+    .controls button.danger {
+      background: #ff4444;
+      color: white;
+    }
+    
+    .controls button.danger:hover {
+      background: #ff6666;
+    }
+    
+    .container {
+      display: flex;
+      height: calc(100vh - 160px);
+    }
+    
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .panel:last-child {
+      border-right: none;
+    }
+    
+    .panel-header {
+      background: #1a1f2e;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .panel-header h2 {
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .badge.v1 {
+      background: rgba(0, 200, 81, 0.2);
+      color: #00c851;
+    }
+    
+    .badge.v2 {
+      background: rgba(255, 187, 51, 0.2);
+      color: #ffbb33;
+    }
+    
+    .panel-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000;
+    }
+    
+    .stats {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    
+    .stats div {
+      margin: 2px 0;
+    }
+    
+    .footer {
+      background: #1a1f2e;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #6c757d;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .tips {
+      background: rgba(0, 212, 170, 0.1);
+      border: 1px solid #00d4aa;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px;
+    }
+    
+    .tips h3 {
+      color: #00d4aa;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    
+    .tips ul {
+      list-style: none;
+      font-size: 13px;
+      color: #b0b6c3;
+    }
+    
+    .tips li {
+      margin: 5px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    
+    .tips li:before {
+      content: '•';
+      color: #00d4aa;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔄 Confronto Side-by-Side: V1 vs V2</h1>
+    <p>Testa le differenze tra la versione originale e quella refactorizzata</p>
+  </div>
+  
+  <div class="controls">
+    <button onclick="reloadBoth()">🔄 Ricarica Entrambe</button>
+    <button onclick="reloadV1()">🔄 Ricarica V1</button>
+    <button onclick="reloadV2()">🔄 Ricarica V2</button>
+    <button class="danger" onclick="clearBothSaves()">🗑️ Cancella Salvataggi</button>
+  </div>
+  
+  <div class="tips">
+    <h3>💡 Cosa Verificare:</h3>
+    <ul>
+      <li><strong>Gameplay identico:</strong> I clienti si comportano allo stesso modo?</li>
+      <li><strong>Performance:</strong> Entrambe girano a 60 FPS?</li>
+      <li><strong>UI:</strong> I controlli funzionano allo stesso modo?</li>
+      <li><strong>Salvataggio:</strong> I dati si salvano correttamente?</li>
+      <li><strong>Console:</strong> Apri DevTools (F12) e controlla errori</li>
+    </ul>
+  </div>
+  
+  <div class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          ✅ Versione 1 (Originale)
+          <span class="badge v1">Stabile</span>
+        </h2>
+      </div>
+      <div class="panel-content">
+        <iframe id="v1-frame" src="index.html"></iframe>
+      </div>
+    </div>
+    
+    <div class="panel">
+      <div class="panel-header">
+        <h2>
+          🧪 Versione 2 (Refactor)
+          <span class="badge v2">Testing</span>
+        </h2>
+      </div>
+      <div class="panel-content">
+        <iframe id="v2-frame" src="index-v2.html"></iframe>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <p>
+      💡 Tip: Usa gli stessi comandi in entrambe le versioni e verifica che il risultato sia identico
+      | 📊 Monitora la console per eventuali differenze o errori
+    </p>
+  </div>
+
+  <script>
+    function reloadBoth() {
+      document.getElementById('v1-frame').src = document.getElementById('v1-frame').src;
+      document.getElementById('v2-frame').src = document.getElementById('v2-frame').src;
+      console.log('🔄 Entrambe le versioni ricaricate');
+    }
+    
+    function reloadV1() {
+      document.getElementById('v1-frame').src = document.getElementById('v1-frame').src;
+      console.log('🔄 V1 ricaricata');
+    }
+    
+    function reloadV2() {
+      document.getElementById('v2-frame').src = document.getElementById('v2-frame').src;
+      console.log('🔄 V2 ricaricata');
+    }
+    
+    function clearBothSaves() {
+      if (confirm('⚠️ Sei sicuro di voler cancellare tutti i salvataggi di entrambe le versioni?\n\nQuesta azione non può essere annullata.')) {
+        localStorage.removeItem('shopTycoonSave');
+        localStorage.removeItem('shopTycoonSave_v2'); // Se V2 usa una key diversa
+        alert('✅ Salvataggi cancellati! Ricarica le pagine per vedere l\'effetto.');
+        console.log('🗑️ Salvataggi cancellati');
+      }
+    }
+    
+    // Log timestamp di caricamento
+    console.log('🔄 Pagina di confronto caricata:', new Date().toLocaleTimeString());
+    console.log('📋 V1 URL:', document.getElementById('v1-frame').src);
+    console.log('📋 V2 URL:', document.getElementById('v2-frame').src);
+  </script>
+</body>
+</html>
