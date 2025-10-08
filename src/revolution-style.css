@@ -42,6 +42,7 @@ body {
 
 #game {
   flex: 1;
+  min-width: 1200px;
   background: var(--bg-game);
   border-radius: var(--radius);
   position: relative;
@@ -49,6 +50,139 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* CANVAS OVERLAY - Stile SimCity */
+#canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.action-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  pointer-events: all;
+}
+
+.overlay-btn {
+  background: rgba(26, 26, 26, 0.95);
+  border: 2px solid var(--accent-red);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  min-width: 90px;
+}
+
+.overlay-btn:hover {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: var(--accent-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.overlay-btn:active {
+  transform: translateY(0);
+}
+
+.overlay-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.overlay-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.overlay-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.overlay-cost {
+  font-size: 10px;
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+/* TOP STATS BAR */
+.stats-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  pointer-events: all;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  background: rgba(26, 26, 26, 0.95);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.stat-item.highlight {
+  border-color: var(--accent-red);
+  background: rgba(231, 76, 60, 0.15);
+}
+
+.stat-item:hover {
+  background: rgba(26, 26, 26, 1);
+  border-color: var(--accent-red);
+}
+
+.stat-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stat-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
 }
@@ -62,13 +196,13 @@ canvas {
 }
 
 #ui {
-  width: 440px;
+  width: 360px;
   background: var(--bg-secondary);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
   overflow-y: auto;
@@ -128,34 +262,147 @@ canvas {
   font-size: 14px;
   font-weight: 700;
   color: var(--accent-gold);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
-.phase-goal {
+.phase-objective {
+  margin-bottom: 12px;
+}
+
+.phase-objective:last-child {
+  margin-bottom: 0;
+}
+
+.objective-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.objective-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.objective-values {
   font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Conversion Statistics */
+.conversion-stats {
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.conversion-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.conversion-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.conversion-type {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
-.phase-goal .progress-bar {
-  margin: 8px 0;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-  overflow: hidden;
+.conversion-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.phase-goal .progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-red), var(--accent-gold));
-  transition: width 0.3s ease;
+.success-rate {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
 }
 
-.phase-goal #goal-text {
+.success-label {
   font-size: 11px;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--accent-red);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+
+.success-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-red);
+}
+
+/* Citizen Types Legend */
+.citizen-legend {
+  background: var(--bg-tertiary);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+/* Metrics Panel */
 
 /* Stats Grid */
 .stats-grid {
@@ -302,6 +549,14 @@ canvas {
 
 .progress-fill.assembly {
   background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+.progress-fill.converts {
+  background: linear-gradient(90deg, #e74c3c, #f39c12);
+}
+
+.progress-fill.influence {
+  background: linear-gradient(90deg, #3498db, #9b59b6);
 }
 
 /* Topics Grid */

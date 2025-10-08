@@ -140,9 +140,24 @@ export class PhaseManager {
    * Ottiene le statistiche della fase
    */
   getPhaseStats() {
+    // Determina gli obiettivi basati sulla fase corrente
+    let goalsObj = {
+      converts: 500,
+      influence: 5000,
+    };
+    
+    if (this.phaseConfig && this.phaseConfig.goal) {
+      if (this.phaseConfig.goal.type === 'converts') {
+        goalsObj.converts = this.phaseConfig.goal.target;
+      } else if (this.phaseConfig.goal.type === 'influence') {
+        goalsObj.influence = this.phaseConfig.goal.target;
+      }
+    }
+    
     return {
       phase: this.currentPhase,
-      phaseName: this.phaseConfig.name,
+      name: this.phaseConfig.name,
+      phaseName: this.phaseConfig.name, // Alias per compatibilità
       converts: this.converts,
       goalProgress: this.goalProgress,
       goalTarget: this.goalTarget,
@@ -150,6 +165,7 @@ export class PhaseManager {
       goalPercentage: Math.min(100, (this.goalProgress / this.goalTarget) * 100),
       canAdvance: this.gameState.goalReached,
       nextPhaseCost: this.phaseConfig.nextPhaseCost,
+      goals: goalsObj, // Oggetto goals per updateHUD
     };
   }
 

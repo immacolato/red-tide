@@ -34,12 +34,12 @@ export const RevolutionConfig = {
     // Obiettivo per passare alla fase successiva
     goal: {
       type: 'converts', // Tipo: converts, influence, time
-      target: 50,
-      description: 'Converti 50 cittadini alla causa'
+      target: 500,
+      description: 'Converti 500 cittadini alla causa'
     },
     
     // Costo per avanzare alla prossima fase
-    nextPhaseCost: 500,
+    nextPhaseCost: 5000,
     
     // Canvas e visual
     canvas: {
@@ -234,8 +234,8 @@ export const RevolutionConfig = {
   // SISTEMA CITTADINI (ex-CLIENT)
   // ============================================================================
   CITIZEN: {
-    BASE_RADIUS: 5,
-    RADIUS_VARIANCE: 2,
+    BASE_RADIUS: 8,
+    RADIUS_VARIANCE: 3,
     BASE_SPEED: 80,
     SPEED_VARIANCE: 30,
     BASE_PATIENCE_MIN: 10,

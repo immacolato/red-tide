@@ -9,7 +9,89 @@
 <body>
 <div id="container">
   <div id="game">
-    <canvas id="canvas" width="960" height="640"></canvas>
+    <canvas id="canvas" width="1280" height="800"></canvas>
+    
+    <!-- OVERLAY HUD COMPLETO -->
+    <div id="canvas-overlay">
+      <!-- TOP BAR - Statistiche Principali -->
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span class="stat-icon">💶</span>
+          <div class="stat-content">
+            <div class="stat-label">Fondi</div>
+            <div class="stat-value" id="money-overlay">0€</div>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-content">
+            <div class="stat-label">Influenza</div>
+            <div class="stat-value" id="influence-overlay">100</div>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <span class="stat-icon">⏱️</span>
+          <div class="stat-content">
+            <div class="stat-label">Tempo</div>
+            <div class="stat-value" id="time-overlay">0s</div>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <span class="stat-icon">👥</span>
+          <div class="stat-content">
+            <div class="stat-label">Cittadini</div>
+            <div class="stat-value"><span id="citizen-count-overlay">0</span>/<span id="citizen-cap-overlay">15</span></div>
+          </div>
+        </div>
+        
+        <div class="stat-item highlight">
+          <span class="stat-icon">✊</span>
+          <div class="stat-content">
+            <div class="stat-label">Convertiti</div>
+            <div class="stat-value" id="converts-overlay">0</div>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <span class="stat-icon">🤝</span>
+          <div class="stat-content">
+            <div class="stat-label">Compagni</div>
+            <div class="stat-value" id="comrades-overlay">0</div>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-content">
+            <div class="stat-label">Spawn</div>
+            <div class="stat-value" id="spawn-rate-overlay">2.5s</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BOTTOM BAR - Azioni -->
+      <div class="action-toolbar">
+        <button id="assembly-overlay" class="overlay-btn" title="Assemblea Pubblica">
+          <span class="overlay-icon">📢</span>
+          <span class="overlay-label">Assemblea</span>
+          <span class="overlay-cost" id="assembly-cost-overlay">30⚡</span>
+        </button>
+        
+        <button id="restock-all-overlay" class="overlay-btn" title="Stampa Volantini">
+          <span class="overlay-icon">📄</span>
+          <span class="overlay-label">Stampa</span>
+        </button>
+        
+        <button id="expand-overlay" class="overlay-btn" title="Espandi Sala">
+          <span class="overlay-icon">🏗️</span>
+          <span class="overlay-label">Espandi</span>
+          <span class="overlay-cost" id="expand-cost-overlay">150⚡</span>
+        </button>
+      </div>
+    </div>
   </div>
   <div id="ui">
     <!-- HEADER -->
@@ -17,6 +99,10 @@
       <div>
         <div class="game-title">🚩 Red Tide</div>
         <div class="game-subtitle">The Revolution Simulator</div>
+      </div>
+      <div class="influence-display">
+        <div class="influence-label">💶 Fondi</div>
+        <div class="influence" id="money">0</div>
       </div>
       <div class="influence-display">
         <div class="influence-label">⚡ Influenza</div>
@@ -27,8 +113,31 @@
     <!-- PHASE INFO -->
     <div class="phase-info">
       <div class="phase-name" id="phase-name">FASE 1: IL CIRCOLO</div>
-      <div class="phase-goal">
-        <span id="phase-progress">Obiettivi: Converti 50 cittadini</span>
+      
+      <!-- Obiettivo Converti -->
+      <div class="phase-objective">
+        <div class="objective-header">
+          <span class="objective-label">✊ Convertiti</span>
+          <span class="objective-values">
+            <span id="phase-converts">0</span>/<span id="phase-converts-goal">50</span>
+          </span>
+        </div>
+        <div class="progress-bar modern">
+          <div class="progress-fill converts" id="phase-converts-bar" style="width: 0%"></div>
+        </div>
+      </div>
+      
+      <!-- Obiettivo Influenza -->
+      <div class="phase-objective">
+        <div class="objective-header">
+          <span class="objective-label">⚡ Influenza</span>
+          <span class="objective-values">
+            <span id="phase-influence">100</span>/<span id="phase-influence-goal">500</span>
+          </span>
+        </div>
+        <div class="progress-bar modern">
+          <div class="progress-fill influence" id="phase-influence-bar" style="width: 20%"></div>
+        </div>
       </div>
     </div>
 
@@ -62,6 +171,71 @@
         <div class="stat-icon">⚡</div>
         <div class="stat-label">Spawn Rate</div>
         <div class="stat-value" id="spawn-interval">2.5s</div>
+      </div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <!-- CONVERSION STATISTICS -->
+    <div class="panel conversion-stats">
+      <div class="panel-title">📈 Statistiche Conversioni</div>
+      
+      <div class="conversion-breakdown">
+        <div class="conversion-row">
+          <span class="conversion-type">🟢 Ricettivi</span>
+          <span class="conversion-count" id="converts-receptive">0</span>
+        </div>
+        <div class="conversion-row">
+          <span class="conversion-type">🟡 Neutrali</span>
+          <span class="conversion-count" id="converts-neutral">0</span>
+        </div>
+        <div class="conversion-row">
+          <span class="conversion-type">🔴 Scettici</span>
+          <span class="conversion-count" id="converts-skeptical">0</span>
+        </div>
+      </div>
+      
+      <div class="success-rate">
+        <span class="success-label">Tasso di Successo</span>
+        <span class="success-value" id="success-rate">0%</span>
+      </div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <!-- CITIZEN TYPES LEGEND -->
+    <div class="panel citizen-legend">
+      <div class="panel-title">👥 Tipi di Cittadini</div>
+      
+      <div class="legend-grid">
+        <div class="legend-item">
+          <span class="legend-color" style="background: #3498db;"></span>
+          <span class="legend-label">Studente</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #e67e22;"></span>
+          <span class="legend-label">Lavoratore</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #95a5a6;"></span>
+          <span class="legend-label">Disoccupato</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #9b59b6;"></span>
+          <span class="legend-label">Freelancer</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #1abc9c;"></span>
+          <span class="legend-label">Pensionato</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #f1c40f;"></span>
+          <span class="legend-label">Intellettuale</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background: #e74c3c;"></span>
+          <span class="legend-label">Attivista</span>
+        </div>
       </div>
     </div>
     
