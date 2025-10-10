@@ -49,6 +49,58 @@ Il seme della rivoluzione. Converti cittadini alle tue idee attraverso tematiche
 1. **Diffondi le idee**: I cittadini visitano gli info desk per conoscere le tematiche
 2. **Gestisci i materiali**: Rifornisci volantini e opuscoli quando finiscono
 3. **Assumi compagni**: Automatizza e potenzia le tue attività
+
+---
+
+## 🛠️ Sviluppo
+
+### Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/immacolato/red-tide.git
+cd red-tide
+
+# Installa dipendenze
+npm install
+
+# Development server
+npm run dev
+```
+
+### 🚀 Workflow Git Semplificato
+
+#### Script Helper Disponibili:
+
+```bash
+# Commit rapido sul branch feature
+./quick-commit.sh "feat: descrizione modifiche"
+
+# Deploy su GitHub Pages (main branch)
+./deploy.sh
+
+# Test build locale
+./test-local.sh
+```
+
+#### Workflow Manuale:
+
+**Per modifiche di sviluppo:**
+```bash
+git add .
+git commit -m "feat: descrizione"
+git push origin feature/revolution-game
+```
+
+**Per pubblicare online:**
+```bash
+git checkout main
+git merge feature/revolution-game
+git push origin main
+# Il sito si aggiorna automaticamente in 1-2 minuti!
+```
+
+📚 **Per dettagli completi vedi:** [WORKFLOW_GIT.md](./WORKFLOW_GIT.md)
 4. **Organizza assemblee**: Aumenta il potere del movimento
 5. **Espandi il circolo**: Aumenta la capacità per accogliere più persone
 
