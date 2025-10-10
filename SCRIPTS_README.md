@@ -60,6 +60,37 @@ Questa cartella contiene script helper per semplificare il workflow Git.
 # - Suggerimenti contextual
 ```
 
+### 🔢 `bump-version.sh`
+**Aggiorna versione del gioco**
+
+```bash
+# Patch version (bugfix): 0.1.0 → 0.1.1
+./bump-version.sh patch
+
+# Minor version (nuove feature): 0.1.0 → 0.2.0
+./bump-version.sh minor
+
+# Major version (breaking changes): 0.1.0 → 1.0.0
+./bump-version.sh major
+
+# Lo script:
+# 1. Mostra versione corrente
+# 2. Chiede conferma
+# 3. Aggiorna package.json
+# 4. Offre commit automatico
+# 5. Offre push automatico
+```
+
+**Quando usarlo:**
+- Dopo fix di bug importanti (patch)
+- Dopo nuove feature (minor)
+- Per release major (major)
+
+**La versione appare:**
+- Nel badge accanto a "Red Tide" nell'UI
+- Nella console del browser
+- Nel tooltip del badge (con commit hash)
+
 ## 🎯 Workflow Consigliato
 
 ### Sviluppo Quotidiano

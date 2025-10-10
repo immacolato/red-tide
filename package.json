@@ -1,6 +1,6 @@
 {
   "name": "red-tide",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Red Tide: The Revolution Simulator - A revolutionary consciousness spreading game",
   "type": "module",
   "scripts": {
@@ -10,6 +10,9 @@
     "dev:test": "vite --open /test-gamestate.html",
     "build": "vite build",
     "preview": "vite preview",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version",
     "start": "npx serve ./ -p 5000",
     "lint": "eslint src --ext .js",
     "format": "prettier --write \"src/**/*.{js,css,html}\"",

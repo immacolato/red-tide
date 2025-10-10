@@ -1,9 +1,25 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
+
+// Get build info
+const getBuildInfo = () => {
+  try {
+    const commitHash = execSync('git rev-parse HEAD').toString().trim();
+    const buildDate = new Date().toISOString().split('T')[0];
+    return { commitHash, buildDate };
+  } catch (e) {
+    return { commitHash: 'unknown', buildDate: new Date().toISOString().split('T')[0] };
+  }
+};
 
 export default defineConfig({
   root: '.',
   base: '/red-tide/', // Per GitHub Pages - will become /red-tide/ after rename
+  define: {
+    'BUILD_DATE': JSON.stringify(getBuildInfo().buildDate),
+    'COMMIT_HASH': JSON.stringify(getBuildInfo().commitHash)
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

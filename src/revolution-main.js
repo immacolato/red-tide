@@ -20,6 +20,7 @@ import { Topic } from './entities/Topic.js';
 import { InfoDesk } from './entities/InfoDesk.js';
 import { Comrade } from './entities/Comrade.js';
 import { RevolutionUtils } from './utils/RevolutionUtils.js';
+import { versionManager } from './utils/VersionManager.js';
 
 // ============================================================================
 // SETUP CANVAS (will be initialized when DOM is ready)
@@ -228,12 +229,42 @@ function getCitizenLabelColor(citizenTypeId) {
 }
 
 // ============================================================================
+// VERSION BADGE
+// ============================================================================
+
+function updateVersionBadge() {
+  const badge = document.getElementById('version-badge');
+  if (!badge) return;
+  
+  const info = versionManager.getFullInfo();
+  
+  // Update text
+  badge.textContent = versionManager.getFullVersion();
+  
+  // Update style for dev
+  if (info.isDev) {
+    badge.classList.add('dev');
+  }
+  
+  // Tooltip with full info
+  const tooltip = `Version: ${info.version}\n` +
+    `Build: ${info.buildDate}\n` +
+    `Environment: ${info.buildEnv}\n` +
+    `Commit: ${info.commitHash.substring(0, 7)}`;
+  
+  badge.title = tooltip;
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
 function initGame() {
   // Setup canvas first!
   setupCanvas();
+  
+  // Update version badge
+  updateVersionBadge();
   
   // Inizializza la fase 1
   phaseManager.initPhase(1);
