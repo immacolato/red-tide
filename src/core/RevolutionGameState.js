@@ -244,36 +244,36 @@ export class RevolutionGameState {
     const tier = this.getAssemblyPowerTier();
     
     switch(tier) {
-      case 4: // 75-100%
-        return {
-          conversionBonus: 0.20,      // +20% probabilità conversione
-          consciousnessDecayReduction: 0.30, // -30% decay coscienza
-          donationBonus: 0.10,         // +10% donazioni
-        };
-      case 3: // 50-75%
-        return {
-          conversionBonus: 0.15,
-          consciousnessDecayReduction: 0.20,
-          donationBonus: 0.05,
-        };
-      case 2: // 25-50%
-        return {
-          conversionBonus: 0.10,
-          consciousnessDecayReduction: 0.10,
-          donationBonus: 0,
-        };
-      case 1: // 1-25%
-        return {
-          conversionBonus: 0.05,
-          consciousnessDecayReduction: 0,
-          donationBonus: 0,
-        };
-      default: // 0%
-        return {
-          conversionBonus: 0,
-          consciousnessDecayReduction: 0,
-          donationBonus: 0,
-        };
+    case 4: // 75-100%
+      return {
+        conversionBonus: 0.20,      // +20% probabilità conversione
+        consciousnessDecayReduction: 0.30, // -30% decay coscienza
+        donationBonus: 0.10,         // +10% donazioni
+      };
+    case 3: // 50-75%
+      return {
+        conversionBonus: 0.15,
+        consciousnessDecayReduction: 0.20,
+        donationBonus: 0.05,
+      };
+    case 2: // 25-50%
+      return {
+        conversionBonus: 0.10,
+        consciousnessDecayReduction: 0.10,
+        donationBonus: 0,
+      };
+    case 1: // 1-25%
+      return {
+        conversionBonus: 0.05,
+        consciousnessDecayReduction: 0,
+        donationBonus: 0,
+      };
+    default: // 0%
+      return {
+        conversionBonus: 0,
+        consciousnessDecayReduction: 0,
+        donationBonus: 0,
+      };
     }
   }
 
@@ -484,23 +484,23 @@ export class RevolutionGameState {
         if (!comrade.working) continue;
         
         switch (effect.type) {
-          case 'passive_restock':
-            // Rifornisce UNA tematica casuale di +1 stock
-            // 1 volontario = ~1 stock/sec totale (distribuito tra le tematiche)
-            // Con 5 tematiche, serve ~5 volontari per tenere tutte al massimo
-            if (this.topics.length > 0) {
-              const randomTopic = this.topics[Math.floor(Math.random() * this.topics.length)];
-              randomTopic.restock(1);
-            }
-            break;
-            
-          case 'consciousness_gain':
-            this.updateConsciousness(effect.value, 'Educazione continua');
-            break;
-            
-          case 'conversion_boost':
-            // Applicato in modo passivo (vedi SpawnSystem)
-            break;
+        case 'passive_restock':
+          // Rifornisce UNA tematica casuale di +1 stock
+          // 1 volontario = ~1 stock/sec totale (distribuito tra le tematiche)
+          // Con 5 tematiche, serve ~5 volontari per tenere tutte al massimo
+          if (this.topics.length > 0) {
+            const randomTopic = this.topics[Math.floor(Math.random() * this.topics.length)];
+            randomTopic.restock(1);
+          }
+          break;
+          
+        case 'consciousness_gain':
+          this.updateConsciousness(effect.value, 'Educazione continua');
+          break;
+          
+        case 'conversion_boost':
+          // Applicato in modo passivo (vedi SpawnSystem)
+          break;
         }
       }
     }
