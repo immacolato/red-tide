@@ -11,7 +11,7 @@ import { RevolutionConfig } from './RevolutionConfig.js';
 export class RevolutionGameState {
   constructor() {
     // Risorse
-    this.money = 20; // € - Per comprare tematiche (donazioni affiliati) - ridotto da 50
+    this.money = 10; // € - Per comprare tematiche - ridotto da 20
     this.influence = RevolutionConfig.INITIAL_INFLUENCE; // ⚡ - Per assumere compagni e azioni
     this.time = 0;
 
@@ -105,37 +105,102 @@ export class RevolutionGameState {
     this.donationTimer = (this.donationTimer || 0) + dt;
     if (this.donationTimer >= 10.0) {
       this.donationTimer = 0;
-      const donationAmount = Math.floor(this.totalConverts * 0.3); // 0.3€ per convertito ogni 10s
+      const donationAmount = this.calculateDonations();
       if (donationAmount > 0) {
         this.addMoney(donationAmount);
-        this.addLog(`💰 Donazioni: +${donationAmount}€ (${this.totalConverts} compagni)`);
+        const breakdown = this.getDonationBreakdown();
+        this.addLog(`💰 +${donationAmount.toFixed(1)}€ ${breakdown}`);
       }
     }
+    
+    // Sistema abbandono convertiti
+    this.attritionTimer = (this.attritionTimer || 0) + dt;
+    if (this.attritionTimer >= RevolutionConfig.ATTRITION.CHECK_INTERVAL) {
+      this.attritionTimer = 0;
+      this.processConvertAttrition();
+    }
+  }
+  
+  /**
+   * Calcola le donazioni totali basate sui convertiti per tipo
+   */
+  calculateDonations() {
+    let total = 0;
+    for (const [typeId, count] of Object.entries(this.convertsByType)) {
+      const citizenType = RevolutionConfig.PHASE_1.citizenTypes.find(t => t.id === typeId);
+      if (citizenType && count > 0) {
+        total += count * citizenType.donationRate;
+      }
+    }
+    return total;
+  }
+  
+  /**
+   * Ottiene il dettaglio delle donazioni per tipo (formato compatto per log)
+   */
+  getDonationBreakdown() {
+    const details = [];
+    for (const [typeId, count] of Object.entries(this.convertsByType)) {
+      const citizenType = RevolutionConfig.PHASE_1.citizenTypes.find(t => t.id === typeId);
+      if (citizenType && count > 0) {
+        const amount = (count * citizenType.donationRate).toFixed(1);
+        details.push(`${citizenType.icon}${count}→${amount}€`);
+      }
+    }
+    return details.length > 0 ? `(${details.join(' ')})` : '';
+  }
+  
+  /**
+   * Ottiene il dettaglio completo delle donazioni per tooltip
+   */
+  getDonationBreakdownDetailed() {
+    const lines = ['Donazioni passive ogni 10 secondi:', ''];
+    let total = 0;
+    
+    for (const [typeId, count] of Object.entries(this.convertsByType)) {
+      const citizenType = RevolutionConfig.PHASE_1.citizenTypes.find(t => t.id === typeId);
+      if (citizenType && count > 0) {
+        const amount = count * citizenType.donationRate;
+        total += amount;
+        lines.push(
+          `${citizenType.icon} ${citizenType.name}: ${count} × ${citizenType.donationRate}€ = ${amount.toFixed(1)}€`
+        );
+      }
+    }
+    
+    if (total > 0) {
+      lines.push('', `TOTALE: +${total.toFixed(1)}€/10s`);
+    } else {
+      lines.push('Nessun convertito ancora.');
+      lines.push('', 'Converti cittadini per ricevere donazioni!');
+    }
+    
+    return lines.join('\n');
   }
 
   /**
    * Aggiorna la coscienza di classe
    */
   updateConsciousness(change, reason = '') {
-    const old = this.consciousness;
     this.consciousness = Math.max(0, Math.min(100, this.consciousness + change));
 
-    // Traccia history
+    // Aggiorna la history per tracking
     this.consciousnessHistory.push({
       time: this.time,
-      change,
-      reason,
       value: this.consciousness,
+      change: change,
+      reason: reason,
     });
 
     if (this.consciousnessHistory.length > 50) {
       this.consciousnessHistory.shift();
     }
 
-    // Log se significativo
-    if (Math.abs(change) >= 1) {
+    // Log solo se molto significativo (±5 o più)
+    if (Math.abs(change) >= 5) {
       const emoji = change > 0 ? '📈' : '📉';
-      this.addLog(`${emoji} Coscienza: ${old.toFixed(0)} → ${this.consciousness.toFixed(0)} (${reason})`);
+      const sign = change > 0 ? '+' : '';
+      this.addLog(`${emoji} Coscienza: ${sign}${change.toFixed(0)} → ${this.consciousness.toFixed(0)}%`);
     }
   }
 
@@ -151,8 +216,10 @@ export class RevolutionGameState {
    * Calcola il costo dell'assemblea
    */
   getAssemblyCost() {
-    const baseCost = 30;
-    const multiplier = 1.4;
+    const phase = RevolutionConfig.PHASE_1; // Fase 1
+    const assemblyAction = phase.actions.find(a => a.id === 'assembly');
+    const baseCost = assemblyAction?.baseCost || 50;
+    const multiplier = assemblyAction?.costMultiplier || 1.6;
     return Math.floor(baseCost * Math.pow(multiplier, this.assemblyLevel));
   }
 
@@ -164,10 +231,10 @@ export class RevolutionGameState {
     if (this.spendInfluence(cost)) {
       this.updateAssemblyPower(25);
       this.assemblyLevel++;
-      this.addLog(`📢 Assemblea organizzata! (${cost} influenza) - Livello ${this.assemblyLevel}`);
+      this.addLog(`📢 Assemblea organizzata! (⚡${cost}) - Liv.${this.assemblyLevel}`);
       return true;
     }
-    this.addLog('❌ Influenza insufficiente per assemblea');
+    this.addLog('❌ ⚡ insufficiente per assemblea');
     return false;
   }
 
@@ -182,10 +249,13 @@ export class RevolutionGameState {
     }
     this.convertsByType[citizenType.id]++;
     
-    // Track by receptivity level
-    if (receptivity >= 0.7) {
+    // Track by receptivity level - Fixed thresholds to match actual citizen values
+    // Receptive: >= 0.75 (Precari 0.85, Disoccupati 0.9, Studenti 0.8)
+    // Neutral: 0.65-0.74 (Lavoratori 0.7)
+    // Skeptical: < 0.65 (Intellettuali 0.6 e variazioni casuali)
+    if (receptivity >= 0.75) {
       this.convertsByReceptivity.receptive++;
-    } else if (receptivity >= 0.4) {
+    } else if (receptivity >= 0.65) {
       this.convertsByReceptivity.neutral++;
     } else {
       this.convertsByReceptivity.skeptical++;
@@ -198,7 +268,106 @@ export class RevolutionGameState {
   registerAttempt() {
     this.totalAttempts++;
   }
+  
+  /**
+   * Processa l'abbandono periodico dei convertiti
+   * Varie cause: coscienza bassa, frustrazione, abbandono naturale
+   */
+  processConvertAttrition() {
+    if (this.totalConverts === 0) return;
+    
+    let totalLost = 0;
+    const lostByType = {};
+    const { CONSCIOUSNESS_RATES, NATURAL_RATE, CONSCIOUSNESS_PENALTY_PER_LOSS } = RevolutionConfig.ATTRITION;
+    
+    // 1. Abbandono per coscienza di classe bassa (critico)
+    if (this.consciousness < CONSCIOUSNESS_RATES.CRITICAL.threshold) {
+      const lost = this.applyAttritionRate(CONSCIOUSNESS_RATES.CRITICAL.rate, lostByType);
+      totalLost += lost;
+      if (lost > 0) {
+        this.addLog(`📉 CRISI! -${lost} compagni abbandonano`, 'important');
+      }
+    } 
+    // 2. Abbandono per coscienza moderatamente bassa
+    else if (this.consciousness < CONSCIOUSNESS_RATES.LOW.threshold) {
+      const lost = this.applyAttritionRate(CONSCIOUSNESS_RATES.LOW.rate, lostByType);
+      totalLost += lost;
+      if (lost > 0) {
+        this.addLog(`📉 Coscienza bassa: -${lost}`);
+      }
+    }
+    
+    // 3. Abbandono naturale casuale (sempre presente, anche con alta coscienza)
+    // Rappresenta persone che si trasferiscono, cambiano vita, etc.
+    const naturalLost = this.applyAttritionRate(NATURAL_RATE, lostByType);
+    totalLost += naturalLost;
+    if (naturalLost > 0) {
+      this.addLog(`🚪 -${naturalLost} (motivi personali)`);
+    }
+    
+    // 4. Abbandono per frustrazione (no progressi di fase da molto tempo)
+    // TODO: Implementare quando avremo tracking del progresso di fase
+    
+    // Aggiorna coscienza: ogni abbandono riduce la morale
+    if (totalLost > 0) {
+      this.updateConsciousness(-totalLost * CONSCIOUSNESS_PENALTY_PER_LOSS, 'Abbandoni');
+    }
+  }
+  
+  /**
+   * Applica un tasso di abbandono ai convertiti
+   * @param {number} rate - Tasso di abbandono (0-1)
+   * @param {object} lostByType - Oggetto per tracciare perdite per tipo
+   * @returns {number} Numero totale di perdite
+   */
+  applyAttritionRate(rate, lostByType) {
+    let totalLost = 0;
+    
+    for (const [typeId, count] of Object.entries(this.convertsByType)) {
+      if (count > 0) {
+        // Calcola quanti abbandonano (minimo 0, massimo tutti)
+        const lost = Math.floor(count * rate);
+        
+        if (lost > 0) {
+          this.convertsByType[typeId] = Math.max(0, count - lost);
+          totalLost += lost;
+          lostByType[typeId] = (lostByType[typeId] || 0) + lost;
+        }
+      }
+    }
+    
+    // Aggiorna il totale
+    this.totalConverts = Math.max(0, this.totalConverts - totalLost);
+    
+    return totalLost;
+  }
+  
+  /**
+   * Rimuove un singolo convertito di un tipo specifico (per eventi puntuali)
+   * @param {string} typeId - ID del tipo di cittadino
+   * @returns {boolean} True se rimosso con successo
+   */
+  removeConvert(typeId) {
+    if (this.convertsByType[typeId] && this.convertsByType[typeId] > 0) {
+      this.convertsByType[typeId]--;
+      this.totalConverts = Math.max(0, this.totalConverts - 1);
+      return true;
+    }
+    return false;
+  }
 
+  /**
+   * Calcola il costo di assunzione di un compagno basato su quanti dello stesso tipo esistono
+   * @param {string} comradeType - Tipo del compagno (volunteer, organizer, educator)
+   * @param {number} baseCost - Costo base
+   * @param {number} multiplier - Moltiplicatore per ogni compagno esistente
+   * @returns {number} Costo scalato
+   */
+  getComradeHireCost(comradeType, baseCost, multiplier) {
+    const existingCount = this.comrades.filter(c => c.type === comradeType).length;
+    return Math.floor(baseCost * Math.pow(multiplier, existingCount));
+  }
+  
   /**
    * Assume un compagno
    * @param {Comrade} comrade - Compagno da assumere
@@ -207,10 +376,10 @@ export class RevolutionGameState {
   hireComrade(comrade) {
     if (this.spendInfluence(comrade.hireCost)) {
       this.comrades.push(comrade);
-      this.addLog(`✊ ${comrade.name} si unisce alla causa!`);
+      this.addLog(`✊ ${comrade.name} si unisce!`);
       return true;
     }
-    this.addLog(`❌ Serve ${comrade.hireCost} influenza per assumere`);
+    this.addLog(`❌ Serve ⚡${comrade.hireCost}`);
     return false;
   }
 
@@ -227,10 +396,10 @@ export class RevolutionGameState {
           const canPay = this.spendMoney(effect.amount);
           if (canPay) {
             comrade.pay();
-            this.addLog(`💰 Pagato ${comrade.name}: ${effect.amount}€`);
+            this.addLog(`💰 ${comrade.name}: -${effect.amount}€`);
           } else {
             comrade.stopWorking();
-            this.addLog(`⚠️ ${comrade.name} non può lavorare - fondi insufficienti!`);
+            this.addLog(`⚠️ ${comrade.name} sospeso (fondi insufficienti)`);
           }
           continue;
         }
@@ -290,13 +459,40 @@ export class RevolutionGameState {
   }
 
   /**
-   * Aggiunge log
+   * Aggiunge log con timestamp e formattazione migliorata
    */
-  addLog(message) {
-    this.logLines.unshift(message);
-    if (this.logLines.length > 200) {
+  addLog(message, type = 'normal') {
+    const timestamp = this.formatTime(this.time);
+    
+    // Formatta il messaggio in modo più leggibile
+    let formattedMessage;
+    
+    if (type === 'important') {
+      // Eventi importanti con separatore
+      formattedMessage = `\n━━━━━━━━━━━━━━━━━━━━━━━━━\n[${timestamp}] ${message}\n━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    } else if (type === 'section') {
+      // Separatore di sezione
+      formattedMessage = `\n─────────────────────────\n${message}`;
+    } else {
+      // Messaggio normale con timestamp compatto
+      formattedMessage = `[${timestamp}] ${message}`;
+    }
+    
+    this.logLines.unshift(formattedMessage);
+    
+    // Limita a 100 linee per performance
+    if (this.logLines.length > 100) {
       this.logLines.pop();
     }
+  }
+  
+  /**
+   * Formatta il tempo in formato leggibile (MM:SS)
+   */
+  formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
   /**

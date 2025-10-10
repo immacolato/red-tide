@@ -33,9 +33,17 @@ export class Citizen {
     this.vx = 0;
     this.vy = 0;
 
-    // Tipo di cittadino (può essere stringa o oggetto)
-    this.type = typeof options.type === 'string' ? options.type : options.type.id;
-    this.icon = options.type.icon || '👤';
+    // Tipo di cittadino - salviamo sia l'oggetto che l'ID
+    if (typeof options.type === 'string') {
+      // Se è una stringa, recupera l'oggetto dalla config
+      this.typeId = options.type;
+      this.type = RevolutionConfig.PHASE_1.citizenTypes.find(t => t.id === options.type) || { id: options.type, name: options.type, icon: '👤' };
+    } else {
+      // Se è un oggetto, salvalo direttamente
+      this.type = options.type;
+      this.typeId = options.type.id;
+    }
+    this.icon = this.type.icon || '👤';
 
     // Identità personale - genera inline per evitare problemi di binding
     const firstNames = [
@@ -156,8 +164,8 @@ export class Citizen {
       consciousness
     );
 
-    // Considera anche il mood
-    const finalProb = conversionProb * (0.7 + this.mood * 0.3);
+    // Considera anche il mood (effetto ridotto)
+    const finalProb = conversionProb * (0.5 + this.mood * 0.2); // Ridotto da (0.7 + mood * 0.3)
 
     const randomRoll = Math.random();
     
@@ -278,10 +286,25 @@ export class Citizen {
   }
 
   /**
-   * Ottiene il colore basato su receptivity e mood
+   * Ottiene il colore basato sul tipo di cittadino
    * @returns {string} Colore CSS
    */
   getColor() {
+    // Usa il colore del tipo di cittadino se disponibile
+    if (this.type && this.type.color) {
+      // Modula la luminosità in base al mood
+      const brightness = 0.8 + this.mood * 0.4; // 0.8-1.2
+      
+      // Parse RGB dal colore hex del tipo
+      const hex = this.type.color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      
+      return `rgb(${Math.min(255, r * brightness)}, ${Math.min(255, g * brightness)}, ${Math.min(255, b * brightness)})`;
+    }
+    
+    // Fallback al vecchio sistema se type non disponibile
     return RevolutionUtils.getCitizenColor(this.receptivity, this.mood);
   }
 
@@ -312,7 +335,7 @@ export class Citizen {
     return {
       x: this.x,
       y: this.y,
-      typeId: typeof this.type === 'string' ? this.type : this.type.id,
+      typeId: this.typeId, // Usa typeId direttamente
       state: this.state,
       topicIndex: this.topicIndex,
       mood: this.mood,

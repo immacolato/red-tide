@@ -17,10 +17,30 @@ export const RevolutionConfig = {
   // ============================================================================
   // RISORSE INIZIALI
   // ============================================================================
-  INITIAL_INFLUENCE: 100, // Influenza sociale (ex-money)
+  INITIAL_INFLUENCE: 30, // Influenza sociale - ridotto da 100
   INITIAL_CONSCIOUSNESS: 50, // Coscienza di classe (ex-satisfaction)
   INITIAL_CAPACITY: 20, // Capacità iniziale persone
   INITIAL_SPAWN_INTERVAL: 2.5,
+  
+  // ============================================================================
+  // SISTEMA ABBANDONO CONVERTITI
+  // ============================================================================
+  ATTRITION: {
+    // Intervallo di controllo (secondi)
+    CHECK_INTERVAL: 15,
+    
+    // Tassi di abbandono basati sulla coscienza di classe
+    CONSCIOUSNESS_RATES: {
+      CRITICAL: { threshold: 30, rate: 0.08 }, // 8% ogni check se coscienza < 30
+      LOW: { threshold: 50, rate: 0.03 },      // 3% ogni check se coscienza < 50
+    },
+    
+    // Abbandono naturale (sempre presente)
+    NATURAL_RATE: 0.01, // 1% ogni check (persone che si trasferiscono, cambiano vita, etc.)
+    
+    // Penalità coscienza per ogni abbandono
+    CONSCIOUSNESS_PENALTY_PER_LOSS: 0.5,
+  },
 
   // ============================================================================
   // FASE 1: IL CIRCOLO
@@ -55,21 +75,23 @@ export const RevolutionConfig = {
         name: 'Stagnazione Salari',
         icon: '💰',
         description: 'I salari non crescono da decenni',
-        difficulty: 'easy', // easy, medium, hard
-        impact: 'medium', // low, medium, high
-        cost: 5, // Costo in influenza per "rifornire"
-        stock: 10,
-        appeal: 0.8, // Quanto è attrattivo (0-1)
+        tooltip: 'Tema: Salari fermi vs inflazione crescente\n\nDifficoltà: ⭐ Facile\nImpatto: ⭐⭐ Medio\nAppeal: 80%\n\nConvince bene lavoratori e precari.\nCosto rifornimento: 15€',
+        difficulty: 'easy',
+        impact: 'medium',
+        cost: 15,
+        stock: 5,
+        appeal: 0.8,
       },
       {
         id: 'gig_economy',
         name: 'Gig Economy',
         icon: '🚴',
         description: 'Rider e freelance senza diritti',
+        tooltip: 'Tema: Sfruttamento lavoratori gig economy\n\nDifficoltà: ⭐ Facile\nImpatto: ⭐⭐⭐ Alto\nAppeal: 85%\n\nMolto efficace, specialmente con precari.\nCosto rifornimento: 20€',
         difficulty: 'easy',
         impact: 'high',
-        cost: 8,
-        stock: 10,
+        cost: 20,
+        stock: 5,
         appeal: 0.85,
       },
       {
@@ -77,10 +99,11 @@ export const RevolutionConfig = {
         name: 'Crisi Abitativa',
         icon: '🏠',
         description: 'Affitti impossibili per i giovani',
+        tooltip: 'Tema: Crisi abitativa e affitti insostenibili\n\nDifficoltà: ⭐⭐ Medio\nImpatto: ⭐⭐⭐ Alto\nAppeal: 75%\n\nTema complesso ma molto sentito.\nConvince studenti e giovani.\nCosto rifornimento: 25€',
         difficulty: 'medium',
         impact: 'high',
-        cost: 10,
-        stock: 8,
+        cost: 25,
+        stock: 3,
         appeal: 0.75,
       },
       {
@@ -88,33 +111,44 @@ export const RevolutionConfig = {
         name: 'Salute Mentale',
         icon: '🧠',
         description: 'Burnout e ansia da lavoro',
+        tooltip: 'Tema: Salute mentale e burnout lavorativo\n\nDifficoltà: ⭐⭐ Medio\nImpatto: ⭐⭐ Medio\nAppeal: 70%\n\nTema delicato ma trasversale.\nCosto rifornimento: 18€',
         difficulty: 'medium',
         impact: 'medium',
-        cost: 7,
-        stock: 10,
+        cost: 18,
+        stock: 4,
         appeal: 0.7,
       },
     ],
     
     // Categorie di cittadini che visitano il circolo
+    // Distribuzione basata su dati realistici della società italiana:
+    // - Lavoratori dipendenti: ~60% forza lavoro
+    // - Precari (atipici, partite IVA): ~20-25%
+    // - Disoccupati: ~8-10%
+    // - Studenti: ~5-10% (quelli politicamente attivi)
+    // - Intellettuali: ~2-5% (professori, professionisti engagé)
     citizenTypes: [
       {
-        id: 'student',
-        name: 'Studente',
-        icon: '🎓',
-        spawnWeight: 0.3, // Probabilità relativa di spawn
-        receptivity: 0.8, // Quanto è ricettivo (0-1)
-        influence: 5, // Influenza che dona quando converte
-        speed: 90,
-        color: '#4ecdc4',
+        id: 'worker',
+        name: 'Lavoratore',
+        icon: '👷',
+        tooltip: 'Lavoratore dipendente a tempo indeterminato\n\nRecettività: ⭐⭐⭐ 70% (medio)\nFrequenza: ⭐⭐⭐⭐⭐ 50% degli arrivi (molto comune)\n\nQuando converte:\n• Dona +3⚡ influenza\n• Dona 0.12€ ogni 10s\n\nLa spina dorsale del movimento.\nPiù difficile da convertire ma stabile e redditizio.',
+        spawnWeight: 0.50, // Maggioranza - lavoratori dipendenti
+        receptivity: 0.7,
+        influence: 3,
+        donationRate: 0.12,
+        speed: 85,
+        color: '#00c851',
       },
       {
         id: 'precarious',
         name: 'Precario',
         icon: '💼',
-        spawnWeight: 0.25,
+        tooltip: 'Lavoratore precario (contratti a termine, partite IVA)\n\nRecettività: ⭐⭐⭐⭐⭐ 85% (molto ricettivo)\nFrequenza: ⭐⭐⭐⭐ 25% degli arrivi (comune)\n\nQuando converte:\n• Dona +2⚡ influenza\n• Dona 0.08€ ogni 10s\n\nMolto ricettivi alla propaganda.\nBuon bilanciamento tra recettività e donazioni.',
+        spawnWeight: 0.25, // Seconda categoria - precarietà crescente
         receptivity: 0.85,
-        influence: 8,
+        influence: 2,
+        donationRate: 0.08,
         speed: 80,
         color: '#ffbb33',
       },
@@ -122,29 +156,35 @@ export const RevolutionConfig = {
         id: 'unemployed',
         name: 'Disoccupato',
         icon: '😔',
-        spawnWeight: 0.2,
+        tooltip: 'Persona disoccupata in cerca di lavoro\n\nRecettività: ⭐⭐⭐⭐⭐ 90% (estremamente ricettivo)\nFrequenza: ⭐⭐ 10% degli arrivi (poco comune)\n\nQuando converte:\n• Dona +1⚡ influenza\n• Dona 0.03€ ogni 10s (pochissimo)\n\nMolto facile da convertire ma con poche risorse.\nRappresenta la disoccupazione strutturale.',
+        spawnWeight: 0.10, // Percentuale realistica di disoccupazione
         receptivity: 0.9,
-        influence: 3,
+        influence: 1,
+        donationRate: 0.03,
         speed: 70,
         color: '#ff6b6b',
       },
       {
-        id: 'worker',
-        name: 'Lavoratore',
-        icon: '👷',
-        spawnWeight: 0.15,
-        receptivity: 0.7,
-        influence: 10,
-        speed: 85,
-        color: '#00c851',
+        id: 'student',
+        name: 'Studente',
+        icon: '🎓',
+        tooltip: 'Studente universitario o liceale politicamente attivo\n\nRecettività: ⭐⭐⭐⭐ 80% (molto ricettivo)\nFrequenza: ⭐⭐ 10% degli arrivi (poco comune)\n\nQuando converte:\n• Dona +1⚡ influenza\n• Dona 0.05€ ogni 10s\n\nGiovani idealisti, molto ricettivi ma con poche risorse.\nImportanti per energia e attivismo.',
+        spawnWeight: 0.10, // Solo studenti politicamente attivi visitano
+        receptivity: 0.8,
+        influence: 1,
+        donationRate: 0.05,
+        speed: 90,
+        color: '#4ecdc4',
       },
       {
         id: 'intellectual',
         name: 'Intellettuale',
         icon: '📚',
-        spawnWeight: 0.1,
+        tooltip: 'Intellettuale, professore, professionista engagé\n\nRecettività: ⭐⭐ 60% (scettico)\nFrequenza: ⭐ 5% degli arrivi (raro)\n\nQuando converte:\n• Dona +4⚡ influenza (prestigio!)\n• Dona 0.20€ ogni 10s (il massimo!)\n\nDifficile da convincere ma estremamente prezioso.\nPorta credibilità e risorse al movimento.',
+        spawnWeight: 0.05, // Élite intellettuale - pochi ma preziosi
         receptivity: 0.6,
-        influence: 15,
+        influence: 4,
+        donationRate: 0.20,
         speed: 75,
         color: '#a29bfe',
       },
@@ -156,9 +196,10 @@ export const RevolutionConfig = {
         id: 'assembly',
         name: 'Assemblea Pubblica',
         icon: '📢',
-        description: 'Organizza un\'assemblea per aumentare la visibilità',
-        baseCost: 30,
-        costMultiplier: 1.4,
+        description: 'Organizza un\'assemblea per aumentare la coscienza di classe',
+        tooltip: 'Raduna i compagni per un\'assemblea collettiva.\n\n+25 Coscienza di Classe (dura 10s)\nCosto: 50⚡ (aumenta ogni uso)\n\nUtile quando la coscienza è bassa per:\n• Ridurre abbandoni convertiti\n• Aumentare probabilità conversioni\n• Stabilizzare il movimento',
+        baseCost: 50,
+        costMultiplier: 1.6,
         effect: {
           type: 'consciousness_boost',
           value: 25,
@@ -169,19 +210,21 @@ export const RevolutionConfig = {
         id: 'print_flyers',
         name: 'Stampa Volantini',
         icon: '📄',
-        description: 'Rifornisci tutte le tematiche',
+        description: 'Stampa materiale informativo per rifornire tutti i temi',
+        tooltip: 'Stampa volantini, opuscoli e materiale propagandistico.\n\nRifornisce tutte le tematiche di +10 stock\nCosto: Somma dei costi di tutte le tematiche\n\nUtile quando il materiale scarseggia per:\n• Evitare che i cittadini vadano via delusi\n• Mantenere alto il flusso di conversioni',
         dynamicCost: true, // Costo calcolato dinamicamente
       },
       {
         id: 'expand_room',
-        name: 'Sala Più Grande',
+        name: 'Espandi Circolo',
         icon: '🏗️',
-        description: 'Aumenta la capacità e sblocca nuove tematiche',
-        baseCost: 150,
-        costMultiplier: 1.6,
+        description: 'Affitta uno spazio più grande per accogliere più persone',
+        tooltip: 'Espandi la capacità del circolo.\n\n+5 Capacità massima cittadini\nCosto: 100⚡ (raddoppia ogni uso)\n\nUtile quando il circolo è sempre pieno per:\n• Permettere più conversioni simultanee\n• Evitare code e impazienza\n• Scalare il movimento',
+        baseCost: 100, // Ridotto da 150 ma con scaling più aggressivo
+        costMultiplier: 2.0, // Aumentato da 1.6 - raddoppia ogni volta!
         effect: {
           type: 'capacity',
-          value: 10,
+          value: 5, // Ridotto da 10
         },
       },
     ],
@@ -193,42 +236,48 @@ export const RevolutionConfig = {
         name: 'Volontario',
         icon: '✊',
         description: 'Distribuisce volantini passivamente',
-        cost: 50, // Costo assunzione (influenza)
-        upkeep: 3, // Costo ogni 30 secondi (€)
-        paymentInterval: 30,
+        tooltip: 'Volontario attivista che rifornisce automaticamente le tematiche.\n\nEffetto: +0.2 stock/secondo a tutte le tematiche\nStipendio: 5€ ogni 10 secondi (30€/min)\n\nAssunzione:\n• 1°: 150⚡\n• 2°: 375⚡ (×2.5)\n\nMax: 2 volontari\n\n⚠️ Devi pagare ogni 10s o smette di lavorare!',
+        baseCost: 150,
+        costMultiplier: 2.5,
+        upkeep: 5,
+        paymentInterval: 10,
         effect: {
           type: 'passive_restock',
-          value: 0.5, // Stock al secondo
+          value: 0.2,
         },
-        maxHire: 3,
+        maxHire: 2,
       },
       {
         id: 'organizer',
         name: 'Organizzatore',
         icon: '🎯',
         description: 'Aumenta la coscienza di classe passivamente',
-        cost: 100, // Costo assunzione (influenza)
-        upkeep: 5, // Costo ogni 30 secondi (€)
-        paymentInterval: 30,
+        tooltip: 'Organizzatore esperto che mantiene alta la morale.\n\nEffetto: +0.15 coscienza/secondo\nStipendio: 8€ ogni 10 secondi (48€/min)\n\nAssunzione: 300⚡\n\nMax: 1 organizzatore\n\nUtile per:\n• Ridurre abbandoni convertiti\n• Aumentare probabilità conversioni\n• Stabilizzare il movimento\n\n⚠️ Devi pagare ogni 10s o smette di lavorare!',
+        baseCost: 300,
+        costMultiplier: 3.0,
+        upkeep: 8,
+        paymentInterval: 10,
         effect: {
           type: 'consciousness_gain',
-          value: 0.3, // Al secondo
+          value: 0.15,
         },
-        maxHire: 2,
+        maxHire: 1,
       },
       {
         id: 'educator',
         name: 'Educatore Popolare',
         icon: '👨‍🏫',
         description: 'Migliora l\'efficacia delle conversioni',
-        cost: 150, // Costo assunzione (influenza)
-        upkeep: 8, // Costo ogni 30 secondi (€)
-        paymentInterval: 30,
+        tooltip: 'Educatore che rende le tematiche più convincenti.\n\nEffetto: +10% probabilità conversione\nStipendio: 10€ ogni 10 secondi (60€/min)\n\nAssunzione: 400⚡\n\nMax: 1 educatore\n\nBonus applicato a tutte le conversioni.\nNon toglie il materiale extra, aumenta solo l\'efficacia.\n\n⚠️ Devi pagare ogni 10s o smette di lavorare!',
+        baseCost: 400,
+        costMultiplier: 3.5,
+        upkeep: 10,
+        paymentInterval: 10,
         effect: {
           type: 'conversion_boost',
-          value: 1.25, // Moltiplicatore
+          value: 1.10,
         },
-        maxHire: 2,
+        maxHire: 1,
       },
     ],
   },
@@ -241,10 +290,10 @@ export const RevolutionConfig = {
     RADIUS_VARIANCE: 3,
     BASE_SPEED: 80,
     SPEED_VARIANCE: 30,
-    BASE_PATIENCE_MIN: 10,
-    BASE_PATIENCE_MAX: 20,
-    MIN_PATIENCE: 5,
-    CROWD_PATIENCE_PENALTY: 0.25,
+    BASE_PATIENCE_MIN: 6, // Ridotto da 10 - meno pazienti!
+    BASE_PATIENCE_MAX: 12, // Ridotto da 20 - meno pazienti!
+    MIN_PATIENCE: 3, // Ridotto da 5
+    CROWD_PATIENCE_PENALTY: 0.4, // Aumentato da 0.25 - più affollato = più frustrazione
   },
 
   // ============================================================================
@@ -262,14 +311,16 @@ export const RevolutionConfig = {
   // SISTEMA COSCIENZA DI CLASSE (ex-SATISFACTION)
   // ============================================================================
   CONSCIOUSNESS: {
-    CONVERT_HAPPY: 3,
-    CONVERT_NEUTRAL: 1,
+    CONVERT_HAPPY: 1.5, // Ridotto da 3 - meno boost dalle conversioni
+    CONVERT_NEUTRAL: 0.5, // Ridotto da 1
     LEAVE_INTERESTED: -0.5,
-    LEAVE_UNINTERESTED: -2,
-    NO_MATERIAL: -4,
-    TOO_RADICAL: -1.5,
-    DECAY_RATE: 0.3,
+    LEAVE_UNINTERESTED: -3, // Aumentato da -2 - più penalità
+    NO_MATERIAL: -5, // Aumentato da -4 - più penalità
+    TOO_RADICAL: -2, // Aumentato da -1.5 - più penalità
+    DECAY_RATE: 0.8, // Aumentato da 0.3 - decay più aggressivo
     TARGET: 50,
+    MIN_DECAY: 0.2, // Decay minimo anche con alta coscienza
+    MAX_DECAY: 1.5, // Decay massimo con bassa coscienza
   },
 
   // ============================================================================

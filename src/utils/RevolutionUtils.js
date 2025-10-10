@@ -29,23 +29,26 @@ export class RevolutionUtils {
    * @returns {number} Probabilità 0-1
    */
   static getConversionProbability(topic, citizenType, consciousness) {
-    // Base: appeal della tematica (0-1)
-    let baseProb = topic.appeal || 0.5;
+    // Base: appeal della tematica (0-1) - RIDOTTA drasticamente
+    let baseProb = (topic.appeal || 0.5) * 0.4; // Ridotta del 60%
 
-    // Bonus dalla coscienza di classe (max +30%)
-    const consciousnessBonus = (consciousness / 100) * 0.3;
+    // Bonus dalla coscienza di classe (max +15% invece di +30%)
+    const consciousnessBonus = (consciousness / 100) * 0.15;
     baseProb += consciousnessBonus;
 
-    // Difficoltà della tematica (più alta = più difficile)
+    // Difficoltà della tematica (impatto molto più forte)
     const difficulty = this.parseDifficulty(topic.difficulty);
-    baseProb *= (1.3 - difficulty * 0.4); // difficulty 0.2 = *1.22, difficulty 0.8 = *0.98
+    baseProb *= (1.1 - difficulty * 0.6); // Penalità più severa
 
-    // Impatto della tematica (tematiche più impattanti convincono di più)
+    // Impatto della tematica (ridotto)
     const impact = this.parseImpact(topic.impact);
-    baseProb *= (0.9 + impact * 0.08); // impact 1 = *0.98, impact 3 = *1.14
+    baseProb *= (0.85 + impact * 0.05); // Impatto ridotto
 
-    // Clamp tra 0.05 e 0.95
-    return Math.max(0.05, Math.min(0.95, baseProb));
+    // Penalità generale del 30% per rendere tutto più difficile
+    baseProb *= 0.7;
+
+    // Clamp tra 0.02 e 0.65 (massimo molto più basso!)
+    return Math.max(0.02, Math.min(0.65, baseProb));
   }
 
   /**

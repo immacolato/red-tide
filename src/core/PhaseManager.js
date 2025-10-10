@@ -43,8 +43,7 @@ export class PhaseManager {
     this.converts = 0;
     this.totalInfluenceGained = 0;
     
-    this.gameState.addLog(`🚩 ${this.phaseConfig.name.toUpperCase()}`);
-    this.gameState.addLog(`📋 Obiettivo: ${this.phaseConfig.goal.description}`);
+    // Log fase rimosso - già visibile nella UI sidebar
   }
 
   /**

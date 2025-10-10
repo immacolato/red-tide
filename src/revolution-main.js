@@ -14,6 +14,7 @@
 import { RevolutionGameState } from './core/RevolutionGameState.js';
 import { SaveManager } from './core/SaveManager.js';
 import { PhaseManager } from './core/PhaseManager.js';
+import { RevolutionConfig } from './core/RevolutionConfig.js';
 import { Citizen } from './entities/Citizen.js';
 import { Topic } from './entities/Topic.js';
 import { InfoDesk } from './entities/InfoDesk.js';
@@ -163,13 +164,13 @@ class RevolutionSpawnSystem {
       topicIndex = randomDesk.topicIndex;
     }
 
-    // Crea il cittadino
+    // Crea il cittadino (passa l'oggetto tipo completo, non solo l'ID)
     const citizen = new Citizen({
       x: spawnPos.x,
       y: spawnPos.y,
       targetDesk,
       topicIndex,
-      type: selectedType.id,
+      type: selectedType, // Passa l'oggetto intero, non solo l'ID
       receptivity,
       patience,
       influenceValue: selectedType.influence || 5,
@@ -214,18 +215,16 @@ const rnd = (a, b) => Math.random() * (b - a) + a;
  * @param {string} citizenType - Tipo di cittadino
  * @returns {string} Colore CSS
  */
-function getCitizenLabelColor(citizenType) {
+function getCitizenLabelColor(citizenTypeId) {
   const colorMap = {
-    'student': '#3498db',        // Blu - Studente
-    'worker': '#e67e22',         // Arancione - Lavoratore
-    'unemployed': '#95a5a6',     // Grigio - Disoccupato
-    'freelancer': '#9b59b6',     // Viola - Freelancer
-    'pensioner': '#1abc9c',      // Verde acqua - Pensionato
-    'intellectual': '#f1c40f',   // Giallo - Intellettuale
-    'activist': '#e74c3c',       // Rosso - Attivista
+    'student': '#4ecdc4',        // Azzurro - Studente
+    'precarious': '#ffbb33',     // Giallo-arancione - Precario
+    'unemployed': '#ff6b6b',     // Rosso chiaro - Disoccupato
+    'worker': '#00c851',         // Verde - Lavoratore
+    'intellectual': '#a29bfe',   // Lavanda - Intellettuale
   };
   
-  return colorMap[citizenType] || '#ffffff'; // Bianco di default
+  return colorMap[citizenTypeId] || '#ffffff'; // Bianco di default
 }
 
 // ============================================================================
@@ -233,18 +232,14 @@ function getCitizenLabelColor(citizenType) {
 // ============================================================================
 
 function initGame() {
-  console.log('🚀 Initializing game...');
-  
   // Setup canvas first!
   setupCanvas();
   
   // Inizializza la fase 1
   phaseManager.initPhase(1);
-  console.log('✅ Phase initialized');
 
   // Crea i topic dalla configurazione
   const phase = phaseManager.getCurrentPhase();
-  console.log('✅ Got current phase:', phase);
   gameState.topics = phase.topics.map(
     topicData =>
       new Topic({
@@ -263,8 +258,7 @@ function initGame() {
   // Crea gli info desk di default
   gameState.infoDesks = InfoDesk.createDefaultDesks();
 
-  gameState.addLog('🚩 Red Tide avviato!');
-  gameState.addLog('💡 Diffondi la coscienza rivoluzionaria');
+  gameState.addLog('🚩 Red Tide - Rivoluzione iniziata!', 'important');
 
   // Prova a caricare un salvataggio esistente
   if (saveManager.hasSave()) {
@@ -334,8 +328,8 @@ function initGame() {
         }
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Errore nel caricamento del salvataggio:', error);
-      console.log('🔄 Resetto il salvataggio e ricomincio da zero');
       saveManager.reset();
       gameState.addLog('⚠️ Errore nel caricamento, nuovo inizio');
     }
@@ -345,16 +339,10 @@ function initGame() {
   saveManager.startAutosave();
 
   // Setup UI
-  console.log('🎨 Setting up UI...');
   setupEventListeners();
-  console.log('✅ Event listeners setup');
   renderTopicsPanel();
-  console.log('✅ Topics panel rendered');
   renderComradesPanel();
-  console.log('✅ Comrades panel rendered');
   updateHUD();
-  console.log('✅ HUD updated');
-  console.log('🎉 Game initialized successfully!');
 }
 
 // ============================================================================
@@ -362,27 +350,21 @@ function initGame() {
 // ============================================================================
 
 let lastT = performance.now();
-let frameCount = 0;
 
 function frame(t) {
   try {
     const dt = Math.min(0.05, (t - lastT) / 1000);
     lastT = t;
     
-    // Log solo il primo frame per debug
-    if (frameCount === 0) {
-      console.log('🎬 First frame running, dt:', dt);
-    }
-    
     update(dt);
     render();
     requestAnimationFrame(frame);
-    
-    frameCount++;
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Error in game loop:', error);
+    // eslint-disable-next-line no-console
     console.error('Stack:', error.stack);
-    // Non fermiamoil loop completamente, ma mostriamo l'errore
+    // Non fermiamo il loop completamente, ma mostriamo l'errore
   }
 }
 
@@ -392,12 +374,31 @@ function update(dt) {
   // Update comrades (passive effects)
   gameState.updateComrades(dt);
 
-  // Decay coscienza verso 50
-  const targetConsciousness = 50;
-  const decayRate = 2; // punti/sec
+  // Decay coscienza dinamico - più aggressivo e influenzato dai compagni
+  const targetConsciousness = RevolutionConfig.CONSCIOUSNESS.TARGET;
+  const baseDecayRate = RevolutionConfig.CONSCIOUSNESS.DECAY_RATE;
+  const minDecay = RevolutionConfig.CONSCIOUSNESS.MIN_DECAY;
+  const maxDecay = RevolutionConfig.CONSCIOUSNESS.MAX_DECAY;
+  
+  // Calcola decay rate basato su distanza dal target e numero di compagni
   if (gameState.consciousness !== targetConsciousness) {
     const diff = targetConsciousness - gameState.consciousness;
-    const change = Math.sign(diff) * Math.min(Math.abs(diff), decayRate * dt);
+    const absDistance = Math.abs(diff);
+    
+    // Decay più forte se lontani dal target
+    let decayRate = baseDecayRate;
+    if (absDistance > 30) {
+      decayRate = maxDecay; // Decay massimo se molto lontani
+    } else if (absDistance < 10) {
+      decayRate = minDecay; // Decay minimo se vicini al target
+    }
+    
+    // Penalità per ogni compagno attivo (richiedono sforzo per mantenere alta la coscienza)
+    const activeComrades = gameState.comrades.filter(c => c.active && c.working).length;
+    const comradePenalty = activeComrades * 0.15; // 0.15 punti/sec per compagno
+    
+    const totalDecay = (decayRate + comradePenalty) * dt;
+    const change = Math.sign(diff) * Math.min(absDistance, totalDecay);
     gameState.updateConsciousness(change, '');
   }
 
@@ -414,7 +415,7 @@ function update(dt) {
   const phaseStats = phaseManager.getPhaseStats();
   if (phaseStats.canAdvance && Math.random() < 0.01) {
     // Mostra notifica (opzionale, per ora solo log)
-    gameState.addLog('🎯 Obiettivi raggiunti! Pronti per la fase successiva');
+    gameState.addLog('🎯 OBIETTIVI COMPLETATI! Fase successiva disponibile', 'important');
   }
 
   // Update HUD periodicamente
@@ -501,9 +502,9 @@ function handleConversion(citizen, topic, desk) {
   // Update obiettivi di fase
   phaseManager.updateProgress('convert', 1);
 
-  // Log
+  // Log migliorato - compatto
   gameState.addLog(
-    `✊ ${citizen.type} convertito! +${citizen.influenceValue} influenza (${topic.name})`
+    `✊ ${citizen.type.name} → +${citizen.influenceValue}⚡ (${topic.name})`
   );
 
   // Effetto visivo
@@ -524,21 +525,30 @@ function handleConversion(citizen, topic, desk) {
 function handleCitizenLeavingWithReason(citizen, result) {
   if (result.reason === 'no_material') {
     const topic = gameState.topics[citizen.topicIndex];
-    gameState.addLog(`❌ ${citizen.type} deluso: ${topic.name} senza materiale!`);
+    gameState.addLog(`❌ ${citizen.type.name} → ${topic.name} esaurito`);
     gameState.updateConsciousness(-3, 'Materiale esaurito');
+    gameState.registerAttempt(); // Count as failed attempt
   } else if (result.reason === 'not_receptive') {
     const topic = gameState.topics[citizen.topicIndex];
-    gameState.addLog(`💭 ${citizen.type} non recettivo a ${topic.name}`);
+    gameState.addLog(`💭 ${citizen.type.name} → ${topic.name} inefficace`);
     gameState.updateConsciousness(-1, 'Non convincente');
-    gameState.registerAttempt(); // Count failed conversion attempt
+    gameState.registerAttempt(); // Count as failed attempt
+  } else if (result.reason === 'not_convinced') {
+    gameState.addLog(`💭 ${citizen.type.name} → non convinto`);
+    gameState.updateConsciousness(-1, 'Non convincente');
+    gameState.registerAttempt(); // Count as failed attempt
+  } else if (result.reason === 'too_radical') {
+    const topic = gameState.topics[citizen.topicIndex];
+    gameState.addLog(`⚠️ ${citizen.type.name} → ${topic.name} troppo radicale`);
+    gameState.updateConsciousness(-2, 'Messaggio troppo radicale');
+    gameState.registerAttempt(); // Count as failed attempt
   } else if (result.reason === 'impatient') {
-    gameState.addLog(`⏰ ${citizen.type} impaziente se ne va`);
+    gameState.addLog(`⏰ ${citizen.type.name} → impaziente`);
     gameState.updateConsciousness(-2, 'Organizzazione carente');
+    gameState.registerAttempt(); // Count as failed attempt
   }
-
-  if (result.consciousness) {
-    gameState.updateConsciousness(result.consciousness, result.reason);
-  }
+  
+  // Non chiamare updateConsciousness di nuovo - già gestito sopra nei case specifici
 }
 
 // ============================================================================
@@ -733,7 +743,7 @@ function render() {
       ctx.fillRect(citizen.x - textWidth / 2 - padding, labelY - bgHeight + 2, textWidth + padding * 2, bgHeight);
       
       // Colore del testo basato sul tipo di cittadino
-      const labelColor = getCitizenLabelColor(citizen.type);
+      const labelColor = getCitizenLabelColor(citizen.typeId);
       ctx.fillStyle = labelColor;
       ctx.font = 'bold 10px sans-serif';
       ctx.fillText(label, citizen.x, labelY);
@@ -930,6 +940,58 @@ function updateHUD() {
   if (moneyEl) moneyEl.textContent = `${Math.floor(stats.money)}€`;
   const moneyOverlayEl = document.getElementById('money-overlay');
   if (moneyOverlayEl) moneyOverlayEl.textContent = `${Math.floor(stats.money)}€`;
+  
+  // Rate fondi (donazioni passive) - Con bilancio entrate/uscite
+  const moneyRateEl = document.getElementById('money-rate');
+  if (moneyRateEl) {
+    const donationPer10s = gameState.calculateDonations();
+    
+    // Calcola uscite (stipendi compagni)
+    const activeComrades = gameState.comrades.filter(c => c.active);
+    let totalUpkeep = 0;
+    for (const comrade of activeComrades) {
+      totalUpkeep += comrade.upkeep;
+    }
+    
+    const netBalance = donationPer10s - totalUpkeep;
+    const sign = netBalance >= 0 ? '+' : '';
+    
+    // Mostra bilancio netto
+    moneyRateEl.textContent = `${sign}${netBalance.toFixed(1)}€/10s`;
+    moneyRateEl.style.color = netBalance >= 0 ? '#4ade80' : '#ef4444';
+    
+    // Update tooltip con breakdown completo
+    let tooltip = 'BILANCIO ECONOMICO (ogni 10s)\n\n';
+    tooltip += '📈 ENTRATE:\n';
+    if (donationPer10s > 0) {
+      tooltip += gameState.getDonationBreakdownDetailed();
+    } else {
+      tooltip += 'Nessuna donazione ancora.\nConverti cittadini per ricevere donazioni!\n';
+    }
+    
+    tooltip += '\n📉 USCITE:\n';
+    if (activeComrades.length > 0) {
+      const comradesByType = {};
+      for (const comrade of activeComrades) {
+        if (!comradesByType[comrade.type]) {
+          comradesByType[comrade.type] = { name: comrade.name, icon: comrade.icon, count: 0, upkeep: comrade.upkeep };
+        }
+        comradesByType[comrade.type].count++;
+      }
+      
+      for (const data of Object.values(comradesByType)) {
+        const total = data.count * data.upkeep;
+        tooltip += `${data.icon} ${data.name}: ${data.count} × ${data.upkeep}€ = -${total.toFixed(1)}€\n`;
+      }
+      tooltip += `\nTOTALE USCITE: -${totalUpkeep.toFixed(1)}€/10s`;
+    } else {
+      tooltip += 'Nessun compagno assunto.';
+    }
+    
+    tooltip += `\n\n💵 BILANCIO NETTO: ${sign}${netBalance.toFixed(1)}€/10s`;
+    
+    moneyRateEl.parentElement.title = tooltip;
+  }
 
   // Influenza (⚡)
   const influenceEl = document.getElementById('influence');
@@ -965,13 +1027,37 @@ function updateHUD() {
     spawnRateOverlayEl.textContent = `${interval.toFixed(1)}s`;
   }
 
-  // Barra coscienza
+  // Coscienza - HUD overlay
+  const consciousnessOverlayEl = document.getElementById('consciousness-overlay');
+  if (consciousnessOverlayEl) {
+    const warning = stats.consciousness < 30 ? ' ⚠⚠' : stats.consciousness < 50 ? ' ⚠' : '';
+    consciousnessOverlayEl.textContent = `${Math.round(stats.consciousness)}%${warning}`;
+  }
+
+  // Potere assembleare - HUD overlay
+  const assemblyPowerOverlayEl = document.getElementById('assembly-power-overlay');
+  if (assemblyPowerOverlayEl) {
+    assemblyPowerOverlayEl.textContent = `${Math.round(stats.assemblyPower)}%`;
+  }
+
+  // Barra coscienza con indicatore di rischio
   const consBar = document.getElementById('consciousness-bar');
   if (consBar) {
     consBar.style.width = `${stats.consciousness}%`;
+    // Cambia colore barra in base al livello
+    if (stats.consciousness < 30) {
+      consBar.style.background = '#ef4444'; // Rosso critico
+    } else if (stats.consciousness < 50) {
+      consBar.style.background = '#fb923c'; // Arancione warning
+    } else {
+      consBar.style.background = 'var(--accent-red)'; // Normale
+    }
   }
   const consValue = document.getElementById('consciousness-value');
-  if (consValue) consValue.textContent = `${Math.round(stats.consciousness)}%`;
+  if (consValue) {
+    const warning = stats.consciousness < 30 ? ' ⚠⚠' : stats.consciousness < 50 ? ' ⚠' : '';
+    consValue.textContent = `${Math.round(stats.consciousness)}%${warning}`;
+  }
 
   // Assemblea power
   const assemblyBar = document.getElementById('assembly-bar');
@@ -1017,7 +1103,7 @@ function updateHUD() {
   const totalConvertsEl = document.getElementById('total-converts');
   if (totalConvertsEl) totalConvertsEl.textContent = stats.totalConverts;
   const convertsOverlayEl = document.getElementById('converts-overlay');
-  if (convertsOverlayEl) convertsOverlayEl.textContent = stats.totalConverts;
+  if (convertsOverlayEl) convertsOverlayEl.textContent = phaseStats.converts; // Convertiti fase corrente
 
   // Conversion statistics by receptivity
   const receptiveEl = document.getElementById('converts-receptive');
@@ -1031,25 +1117,195 @@ function updateHUD() {
   const successRateEl = document.getElementById('success-rate');
   if (successRateEl) successRateEl.textContent = `${stats.successRate}%`;
 
-  // Update log
+  // Update log (sidebar)
   const logEl = document.getElementById('log');
   if (logEl) {
     logEl.textContent = gameState.logLines.slice(0, 100).join('\n');
   }
+  
+  // Update canvas log (overlay)
+  const canvasLogEl = document.getElementById('canvas-log');
+  if (canvasLogEl) {
+    canvasLogEl.textContent = gameState.logLines.slice(0, 100).join('\n');
+    // Auto-scroll al fondo per mostrare messaggi più recenti
+    canvasLogEl.scrollTop = 0; // Scroll in alto (i messaggi più recenti sono in cima)
+  }
+  
+  // Update donation breakdown panel
+  renderDonationBreakdown();
+}
+
+function renderDonationBreakdown() {
+  const donationContainer = document.getElementById('donation-breakdown');
+  const donationTotalEl = document.getElementById('donation-total');
+  const upkeepContainer = document.getElementById('upkeep-breakdown');
+  const upkeepTotalEl = document.getElementById('upkeep-total');
+  const netBalanceEl = document.getElementById('net-balance');
+  
+  if (!donationContainer || !donationTotalEl) return;
+  
+  // === ENTRATE (DONAZIONI) ===
+  donationContainer.innerHTML = '';
+  let totalDonations = 0;
+  let hasConverts = false;
+  
+  const phase = phaseManager.getCurrentPhase();
+  const citizenTypes = phase.citizenTypes;
+  
+  // Crea una riga per ogni tipo di cittadino convertito
+  for (const citizenType of citizenTypes) {
+    const count = gameState.convertsByType[citizenType.id] || 0;
+    if (count > 0) {
+      hasConverts = true;
+      const donation = count * citizenType.donationRate;
+      totalDonations += donation;
+      
+      const div = document.createElement('div');
+      div.className = 'donation-item';
+      
+      // Aggiungi tooltip dal config se disponibile
+      if (citizenType.tooltip) {
+        div.title = citizenType.tooltip;
+      }
+      
+      div.innerHTML = `
+        <div class="donation-type">
+          <span class="donation-type-icon">${citizenType.icon}</span>
+          <span>${citizenType.name}</span>
+          <span class="donation-calc">${count} × ${citizenType.donationRate}€</span>
+        </div>
+        <div class="donation-amount" style="color: #4ade80;">+${donation.toFixed(1)}€</div>
+      `;
+      donationContainer.appendChild(div);
+    }
+  }
+  
+  // Se nessun convertito, mostra messaggio
+  if (!hasConverts) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.style.cssText = 'text-align: center; padding: 12px; color: var(--text-muted); font-size: 11px;';
+    emptyDiv.textContent = 'Converti cittadini per ricevere donazioni';
+    donationContainer.appendChild(emptyDiv);
+  }
+  
+  // Update totale donazioni con indicatore stabilità
+  const stabilityIndicator = getStabilityIndicator();
+  donationTotalEl.innerHTML = hasConverts 
+    ? `+${totalDonations.toFixed(1)}€/10s ${stabilityIndicator}` 
+    : '+0.0€/10s';
+  
+  // === USCITE (STIPENDI COMPAGNI) ===
+  if (upkeepContainer && upkeepTotalEl) {
+    upkeepContainer.innerHTML = '';
+    let totalUpkeep = 0;
+    const activeComrades = gameState.comrades.filter(c => c.active);
+    
+    if (activeComrades.length > 0) {
+      // Raggruppa compagni per tipo e conta
+      const comradesByType = {};
+      for (const comrade of activeComrades) {
+        if (!comradesByType[comrade.type]) {
+          comradesByType[comrade.type] = {
+            name: comrade.name,
+            icon: comrade.icon,
+            count: 0,
+            upkeepPerOne: comrade.upkeep,
+            interval: comrade.paymentInterval
+          };
+        }
+        comradesByType[comrade.type].count++;
+      }
+      
+      // Crea una riga per ogni tipo di compagno
+      for (const data of Object.values(comradesByType)) {
+        const upkeep = data.count * data.upkeepPerOne;
+        totalUpkeep += upkeep;
+        
+        const div = document.createElement('div');
+        div.className = 'donation-item';
+        div.innerHTML = `
+          <div class="donation-type">
+            <span class="donation-type-icon">${data.icon}</span>
+            <span>${data.name}</span>
+            <span class="donation-calc">${data.count} × ${data.upkeepPerOne}€</span>
+          </div>
+          <div class="donation-amount" style="color: #ef4444;">-${upkeep.toFixed(1)}€</div>
+        `;
+        upkeepContainer.appendChild(div);
+      }
+    } else {
+      // Nessun compagno assunto
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.cssText = 'text-align: center; padding: 12px; color: var(--text-muted); font-size: 11px;';
+      emptyDiv.textContent = 'Nessun compagno assunto';
+      upkeepContainer.appendChild(emptyDiv);
+    }
+    
+    // Update totale uscite
+    upkeepTotalEl.textContent = activeComrades.length > 0 
+      ? `-${totalUpkeep.toFixed(1)}€/10s` 
+      : '-0.0€/10s';
+    
+    // === BILANCIO NETTO ===
+    if (netBalanceEl) {
+      const netBalance = totalDonations - totalUpkeep;
+      const color = netBalance >= 0 ? '#4ade80' : '#ef4444';
+      const sign = netBalance >= 0 ? '+' : '';
+      netBalanceEl.innerHTML = `<span style="color: ${color};">${sign}${netBalance.toFixed(1)}€/10s</span>`;
+    }
+  }
+}
+
+/**
+ * Calcola l'indicatore di stabilità dei convertiti
+ * Basato sulla coscienza di classe
+ */
+function getStabilityIndicator() {
+  const consciousness = gameState.consciousness;
+  
+  if (consciousness >= 70) {
+    return '<span style="color: #4ade80;" title="Stabilità Alta - Pochi abbandoni">✓</span>';
+  } else if (consciousness >= 50) {
+    return '<span style="color: #fbbf24;" title="Stabilità Normale - Abbandoni naturali">~</span>';
+  } else if (consciousness >= 30) {
+    return '<span style="color: #fb923c;" title="Stabilità Bassa - Abbandoni frequenti">⚠</span>';
+  } else {
+    return '<span style="color: #ef4444;" title="Stabilità Critica - Abbandoni massivi!">⚠⚠</span>';
+  }
 }
 
 function updateActionButtons() {
-  // Update costo assemblea
+  // Update costo assemblea (pannello azioni)
+  const assemblyCost = gameState.getAssemblyCost();
   const assemblyCostEl = document.getElementById('assembly-cost');
   if (assemblyCostEl) {
-    assemblyCostEl.textContent = gameState.assemblyCost;
+    assemblyCostEl.textContent = assemblyCost;
+  }
+  
+  // Update costo assemblea (overlay HUD)
+  const assemblyCostOverlayEl = document.getElementById('assembly-cost-overlay');
+  if (assemblyCostOverlayEl) {
+    assemblyCostOverlayEl.textContent = `${assemblyCost}⚡`;
   }
 
-  // Update costo espansione
+  // Update costo restock (overlay HUD)
+  const restockCost = gameState.topics.reduce((sum, topic) => sum + topic.getRestockCost(10), 0);
+  const restockCostOverlayEl = document.getElementById('restock-cost-overlay');
+  if (restockCostOverlayEl) {
+    restockCostOverlayEl.textContent = `${Math.floor(restockCost)}€`;
+  }
+
+  // Update costo espansione (deve corrispondere alla formula in handleExpand)
   const expandCostEl = document.getElementById('expand-cost');
+  const expandCost = Math.floor(100 * Math.pow(2.0, Math.floor((gameState.citizenCap - 15) / 5)));
   if (expandCostEl) {
-    const cost = Math.floor(50 * Math.pow(1.4, Math.floor((gameState.citizenCap - 15) / 5)));
-    expandCostEl.textContent = cost;
+    expandCostEl.textContent = expandCost;
+  }
+  
+  // Update costo espansione (overlay HUD)
+  const expandCostOverlayEl = document.getElementById('expand-cost-overlay');
+  if (expandCostOverlayEl) {
+    expandCostOverlayEl.textContent = `${expandCost}⚡`;
   }
 }
 
@@ -1064,6 +1320,11 @@ function renderTopicsPanel() {
 
     const div = document.createElement('div');
     div.className = 'topic-item';
+    
+    // Aggiungi tooltip dal config se disponibile
+    if (topic.tooltip) {
+      div.title = topic.tooltip;
+    }
 
     const stockColor =
       stats.stockStatus === 'out_of_stock'
@@ -1110,6 +1371,12 @@ function renderComradesPanel() {
     for (const comrade of activeComrades) {
       const div = document.createElement('div');
       div.className = 'comrade-item';
+      
+      // Trova il config del compagno per il tooltip
+      const comradeData = phase.comrades.find(c => c.id === comrade.type);
+      if (comradeData && comradeData.tooltip) {
+        div.title = comradeData.tooltip;
+      }
       
       // Stile basato su stato
       if (!comrade.working) {
@@ -1164,19 +1431,31 @@ function renderComradesPanel() {
   for (const comradeData of phase.comrades) {
     const div = document.createElement('div');
     div.className = 'comrade-item';
+    
+    // Aggiungi tooltip dal config se disponibile
+    if (comradeData.tooltip) {
+      div.title = comradeData.tooltip;
+    }
+    
+    // Calcola il costo attuale (scalato in base a quanti esistono)
+    const currentCost = gameState.getComradeHireCost(
+      comradeData.id,
+      comradeData.baseCost || comradeData.cost,
+      comradeData.costMultiplier || 1.0
+    );
 
     div.innerHTML = `
       <div class="comrade-info">
         <div class="comrade-name">${comradeData.icon} ${comradeData.name}</div>
         <div class="comrade-details">${comradeData.description}</div>
         <div class="comrade-cost">
-          Assunzione: ⚡${comradeData.cost} influenza<br>
+          Assunzione: ⚡${currentCost} influenza ${comradeData.costMultiplier > 1 ? `(+${((comradeData.costMultiplier - 1) * 100).toFixed(0)}% per ognuno)` : ''}<br>
           Stipendio: €${comradeData.upkeep} ogni ${comradeData.paymentInterval || 30}s
         </div>
       </div>
       <div class="comrade-actions">
         <button data-action="hire-comrade" data-type="${comradeData.id}" class="comrade-btn hire">
-          Assumi ⚡${comradeData.cost}
+          Assumi ⚡${currentCost}
         </button>
       </div>
     `;
@@ -1190,9 +1469,52 @@ function renderComradesPanel() {
 // ============================================================================
 
 function setupEventListeners() {
-  // Canvas click handler - per restock button sui desk
+  // Canvas mousemove handler - per cambiare cursore sui bottoni
   const canvas = document.getElementById('canvas');
   if (canvas) {
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+      
+      let overButton = false;
+      
+      // Check se il mouse è sopra un pulsante X dei compagni
+      for (const comrade of gameState.comrades) {
+        if (!comrade.active || !comrade.removeButton) continue;
+        
+        const btn = comrade.removeButton;
+        const btnDx = mouseX - btn.x;
+        const btnDy = mouseY - btn.y;
+        const btnDist = Math.sqrt(btnDx * btnDx + btnDy * btnDy);
+        
+        if (btnDist < btn.r) {
+          overButton = true;
+          break;
+        }
+      }
+      
+      // Check se il mouse è sopra un pulsante + di un desk
+      if (!overButton) {
+        for (const desk of gameState.infoDesks) {
+          const btnSize = 36;
+          const btnX = desk.x + desk.w - btnSize / 2 - 10;
+          const btnY = desk.y - btnSize - 4;
+          
+          if (mouseX >= btnX && mouseX <= btnX + btnSize && 
+              mouseY >= btnY && mouseY <= btnY + btnSize) {
+            overButton = true;
+            break;
+          }
+        }
+      }
+      
+      // Cambia cursore
+      canvas.style.cursor = overButton ? 'pointer' : 'default';
+    });
+    
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = W / rect.width;
@@ -1247,11 +1569,11 @@ function setupEventListeners() {
           
           if (gameState.spendMoney(cost)) {
             topic.restock(10);
-            gameState.addLog(`📄 Rifornito ${topic.name} (+10, -${cost}€)`);
+            gameState.addLog(`📄 ${topic.name} +10 (-${cost}€)`);
             renderTopicsPanel();
             updateHUD();
           } else {
-            gameState.addLog(`❌ Fondi insufficienti per ${topic.name} (serve ${cost}€)`);
+            gameState.addLog(`❌ ${topic.name}: serve ${cost}€`);
           }
           return;
         }
@@ -1274,11 +1596,11 @@ function setupEventListeners() {
         const cost = topic.getRestockCost(10);
         if (gameState.spendMoney(cost)) {
           topic.restock(10);
-          gameState.addLog(`📄 Rifornito ${topic.name} (+10, -${cost}€)`);
+          gameState.addLog(`📄 ${topic.name} +10 (-${cost}€)`);
           renderTopicsPanel();
           updateHUD();
         } else {
-          gameState.addLog(`❌ Fondi insufficienti per ${topic.name} (serve ${cost}€)`);
+          gameState.addLog(`❌ ${topic.name}: serve ${cost}€`);
         }
       }
     });
@@ -1348,16 +1670,25 @@ function setupEventListeners() {
           const comradeX = areaCenterX;
           const comradeY = startY + (comradeIndex * spacing);
           
+          // Calcola il costo scalato in base a quanti dello stesso tipo esistono
+          const calculatedCost = gameState.getComradeHireCost(
+            comradeData.id,
+            comradeData.baseCost || comradeData.cost,
+            comradeData.costMultiplier || 1.0
+          );
+          
           const comrade = new Comrade({
             type: comradeData.id,
             name: comradeData.name,
-            cost: comradeData.cost,
+            baseCost: comradeData.baseCost || comradeData.cost,
+            cost: comradeData.cost, // Mantieni per retrocompatibilità
+            costMultiplier: comradeData.costMultiplier,
             upkeep: comradeData.upkeep,
             paymentInterval: comradeData.paymentInterval || 30,
             effect: comradeData.effect,
             x: comradeX,
             y: comradeY,
-          }, gameState.time);
+          }, gameState.time, calculatedCost);
 
           // hireComrade gestisce internamente il pagamento e i log
           const hired = gameState.hireComrade(comrade);
@@ -1386,7 +1717,8 @@ function setupEventListeners() {
 
   // Handler condiviso per Espandi
   const handleExpand = () => {
-    const cost = Math.floor(50 * Math.pow(1.4, Math.floor((gameState.citizenCap - 15) / 5)));
+    // Costo molto più alto e scaling più aggressivo
+    const cost = Math.floor(100 * Math.pow(2.0, Math.floor((gameState.citizenCap - 15) / 5)));
 
     if (gameState.spendInfluence(cost)) {
       gameState.citizenCap += 5;
@@ -1415,11 +1747,11 @@ function setupEventListeners() {
       for (const topic of gameState.topics) {
         topic.restock(10);
       }
-      gameState.addLog(`📄 Tutti i materiali riforniti! (-${totalCost}€)`);
+      gameState.addLog(`📄 Tutti riforniti! (-${totalCost}€)`);
       renderTopicsPanel();
       updateHUD();
     } else {
-      gameState.addLog(`❌ Fondi insufficienti (serve ${totalCost}€)`);
+      gameState.addLog(`❌ Serve ${totalCost}€`);
     }
   };
   
@@ -1450,7 +1782,7 @@ function setupEventListeners() {
   if (saveBtn) {
     saveBtn.onclick = () => {
       saveManager.save(phaseManager);
-      gameState.addLog('💾 Rivoluzione salvata!');
+      gameState.addLog('💾 Progresso salvato');
     };
   }
 
@@ -1486,25 +1818,21 @@ try {
     const data = JSON.parse(oldSave);
     // Controlla se è vecchio formato
     if (data.topics && data.topics[0] && !data.topics[0].id) {
-      console.warn('🔄 Vecchio salvataggio rilevato, pulizia in corso...');
       localStorage.removeItem('redTideRevolutionSave');
       localStorage.removeItem('shopTycoonSave'); // Rimuovi anche il vecchio
-      console.log('✅ Salvataggio pulito, nuovo inizio!');
     }
   }
 } catch (e) {
-  console.warn('⚠️ Errore nel check salvataggio, reset completo');
   localStorage.clear();
 }
 
 try {
-  console.log('🎮 Starting game initialization...');
   initGame();
-  console.log('🎮 Game initialized, starting animation loop...');
   requestAnimationFrame(frame);
-  console.log('✅ Game started successfully!');
 } catch (error) {
+  // eslint-disable-next-line no-console
   console.error('❌ CRITICAL ERROR:', error);
+  // eslint-disable-next-line no-console
   console.error('Stack trace:', error.stack);
   
   // Offri un reset

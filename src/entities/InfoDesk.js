@@ -77,12 +77,12 @@ export class InfoDesk {
    * @returns {InfoDesk[]} Array di banchi
    */
   static createDefaultDesks() {
-    // Layout ottimizzato per canvas 1280x800 - desk molto più grandi
+    // Layout ottimizzato per canvas 1280x800 - desk ben a sinistra per log a destra
     return [
-      new InfoDesk({ x: 280, y: 160, w: 220, h: 80, topicIndex: 0 }),
-      new InfoDesk({ x: 540, y: 160, w: 220, h: 80, topicIndex: 1 }),
-      new InfoDesk({ x: 800, y: 160, w: 220, h: 80, topicIndex: 2 }),
-      new InfoDesk({ x: 460, y: 380, w: 220, h: 80, topicIndex: 3 }),
+      new InfoDesk({ x: 120, y: 160, w: 220, h: 80, topicIndex: 0 }),
+      new InfoDesk({ x: 380, y: 160, w: 220, h: 80, topicIndex: 1 }),
+      new InfoDesk({ x: 640, y: 160, w: 220, h: 80, topicIndex: 2 }),
+      new InfoDesk({ x: 300, y: 380, w: 220, h: 80, topicIndex: 3 }),
     ];
   }
 }

@@ -11,14 +11,16 @@ export class Comrade {
    * @param {object} config - Configurazione del compagno
    * @param {number} hireTime - Quando è stato assunto
    */
-  constructor(config, hireTime = 0) {
+  constructor(config, hireTime = 0, calculatedCost = null) {
     this.type = config.type || config.id;
     this.name = config.name;
     this.icon = config.icon || '';
     this.description = config.description || '';
 
-    // Costi
-    this.hireCost = config.cost;
+    // Costi - usa il costo calcolato se fornito, altrimenti fallback a baseCost
+    this.hireCost = calculatedCost !== null ? calculatedCost : (config.baseCost || config.cost || 0);
+    this.baseCost = config.baseCost || config.cost || 0;
+    this.costMultiplier = config.costMultiplier || 1.0;
     this.upkeep = config.upkeep || 0; // Costo ogni 30 secondi
     this.paymentInterval = config.paymentInterval || 30; // Ogni quanto paga (secondi)
 

@@ -15,23 +15,16 @@
     <div id="canvas-overlay">
       <!-- TOP BAR - Statistiche Principali -->
       <div class="stats-bar">
-        <div class="stat-item">
+        <div class="stat-item" title="Denaro disponibile per assumere compagni e stampare materiale.&#10;&#10;Entrate: Donazioni dai convertiti (ogni 10s)&#10;Uscite: Stipendi compagni (ogni 10s)&#10;&#10;Vedi il pannello 'Bilancio Economico' per dettagli.">
           <span class="stat-icon">💶</span>
           <div class="stat-content">
-            <div class="stat-label">Fondi</div>
+            <div class="stat-label">Fondi <span class="stat-info">ⓘ</span></div>
             <div class="stat-value" id="money-overlay">0€</div>
+            <div class="stat-subtext" id="money-rate">+0€/10s</div>
           </div>
         </div>
         
-        <div class="stat-item">
-          <span class="stat-icon">⚡</span>
-          <div class="stat-content">
-            <div class="stat-label">Influenza</div>
-            <div class="stat-value" id="influence-overlay">100</div>
-          </div>
-        </div>
-        
-        <div class="stat-item">
+        <div class="stat-item" title="Tempo trascorso dall'inizio della partita.&#10;&#10;Usato per calcolare statistiche e progressione.">
           <span class="stat-icon">⏱️</span>
           <div class="stat-content">
             <div class="stat-label">Tempo</div>
@@ -39,7 +32,7 @@
           </div>
         </div>
         
-        <div class="stat-item">
+        <div class="stat-item" title="Cittadini attualmente nel circolo / Capacità massima.&#10;&#10;Quando pieno:&#10;• I nuovi cittadini non entrano&#10;• Formano code all'esterno&#10;• Perdono pazienza più velocemente&#10;&#10;Espandi il circolo per aumentare la capacità (+5 per espansione).">
           <span class="stat-icon">👥</span>
           <div class="stat-content">
             <div class="stat-label">Cittadini</div>
@@ -47,15 +40,7 @@
           </div>
         </div>
         
-        <div class="stat-item highlight">
-          <span class="stat-icon">✊</span>
-          <div class="stat-content">
-            <div class="stat-label">Convertiti</div>
-            <div class="stat-value" id="converts-overlay">0</div>
-          </div>
-        </div>
-        
-        <div class="stat-item">
+        <div class="stat-item" title="Compagni attivi che lavorano per la rivoluzione.&#10;&#10;Tipi disponibili:&#10;• Volontario (150⚡): +10% conversione, 5€/10s&#10;• Organizzatore (250⚡): +15% conversione, -20% decay coscienza, 7€/10s&#10;• Propagandista (400⚡): +25% conversione, -30% decay coscienza, 10€/10s&#10;&#10;⚠️ Se non hai abbastanza soldi, smettono di lavorare!">
           <span class="stat-icon">🤝</span>
           <div class="stat-content">
             <div class="stat-label">Compagni</div>
@@ -63,50 +48,84 @@
           </div>
         </div>
         
-        <div class="stat-item">
+        <div class="stat-item" title="Tempo tra uno spawn e l'altro di nuovi cittadini.&#10;&#10;Più è basso, più veloce è il flusso di visitatori.&#10;&#10;Influenzato da:&#10;• Numero di tematiche attive&#10;• Eventi casuali&#10;• Fase di gioco">
           <span class="stat-icon">⚡</span>
           <div class="stat-content">
             <div class="stat-label">Spawn</div>
             <div class="stat-value" id="spawn-rate-overlay">2.5s</div>
           </div>
         </div>
+        
+        <div class="stat-item" title="Risorsa necessaria per azioni del movimento.&#10;&#10;Si ottiene da:&#10;• Conversioni (+1)&#10;• Espansioni dello spazio&#10;&#10;Si usa per:&#10;• Assemblee&#10;• Stampa tematiche&#10;• Espansioni">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-content">
+            <div class="stat-label">Influenza</div>
+            <div class="stat-value" id="influence-overlay">30</div>
+          </div>
+        </div>
+        
+        <div class="stat-item" title="Numero totale di cittadini convertiti alla causa.&#10;&#10;I convertiti donano fondi passivamente in base al loro tipo:&#10;• Lavoratore: 0.20€/10s&#10;• Precario: 0.15€/10s&#10;• Disoccupato: 0.03€/10s&#10;• Studente: 0.05€/10s&#10;• Intellettuale: 0.10€/10s&#10;&#10;Possono abbandonare se la coscienza è bassa!">
+          <span class="stat-icon">🚩</span>
+          <div class="stat-content">
+            <div class="stat-label">Convertiti</div>
+            <div class="stat-value" id="converts-overlay">0</div>
+          </div>
+        </div>
+        
+        <div class="stat-item" title="La coscienza di classe influenza la stabilità dei convertiti.&#10;&#10;≥70%: Stabilità alta, pochi abbandoni&#10;50-70%: Stabilità normale, abbandoni naturali (1%)&#10;30-50%: Stabilità bassa, abbandoni frequenti (3%)&#10;<30%: CRITICO! Abbandoni massivi (8%)">
+          <span class="stat-icon">🧠</span>
+          <div class="stat-content">
+            <div class="stat-label">Coscienza di Classe</div>
+            <div class="stat-value" id="consciousness-overlay">50%</div>
+          </div>
+        </div>
+        
+        <div class="stat-item" title="Potere temporaneo delle assemblee collettive.&#10;&#10;Aumenta dopo ogni assemblea (+25%)&#10;Dura 10 secondi&#10;&#10;Effetti:&#10;• Aumenta probabilità conversioni&#10;• Riduce abbandoni&#10;• Stabilizza il movimento">
+          <span class="stat-icon">📢</span>
+          <div class="stat-content">
+            <div class="stat-label">Potere Assembleare</div>
+            <div class="stat-value" id="assembly-power-overlay">0%</div>
+          </div>
+        </div>
       </div>
       
       <!-- BOTTOM BAR - Azioni -->
       <div class="action-toolbar">
-        <button id="assembly-overlay" class="overlay-btn" title="Assemblea Pubblica">
+        <button id="assembly-overlay" class="overlay-btn" title="Raduna i compagni per un'assemblea collettiva.&#10;&#10;+25 Coscienza di Classe (dura 10s)&#10;Costo: 50⚡ (aumenta ogni uso)&#10;&#10;Utile quando la coscienza è bassa per:&#10;• Ridurre abbandoni convertiti&#10;• Aumentare probabilità conversioni&#10;• Stabilizzare il movimento">
           <span class="overlay-icon">📢</span>
           <span class="overlay-label">Assemblea</span>
-          <span class="overlay-cost" id="assembly-cost-overlay">30⚡</span>
+          <span class="overlay-cost" id="assembly-cost-overlay">50⚡</span>
         </button>
         
-        <button id="restock-all-overlay" class="overlay-btn" title="Stampa Volantini">
+        <button id="restock-all-overlay" class="overlay-btn" title="Stampa volantini, opuscoli e materiale propagandistico.&#10;&#10;Rifornisce tutte le tematiche di +10 stock&#10;Costo: Somma dei costi di tutte le tematiche&#10;&#10;Utile quando il materiale scarseggia per:&#10;• Evitare che i cittadini vadano via delusi&#10;• Mantenere alto il flusso di conversioni">
           <span class="overlay-icon">📄</span>
           <span class="overlay-label">Stampa</span>
+          <span class="overlay-cost" id="restock-cost-overlay">0€</span>
         </button>
         
-        <button id="expand-overlay" class="overlay-btn" title="Espandi Sala">
+        <button id="expand-overlay" class="overlay-btn" title="Espandi la capacità del circolo.&#10;&#10;+5 Capacità massima cittadini&#10;Costo: 100⚡ (raddoppia ogni uso)&#10;&#10;Utile quando il circolo è sempre pieno per:&#10;• Permettere più conversioni simultanee&#10;• Evitare code e impazienza&#10;• Scalare il movimento">
           <span class="overlay-icon">🏗️</span>
           <span class="overlay-label">Espandi</span>
-          <span class="overlay-cost" id="expand-cost-overlay">150⚡</span>
+          <span class="overlay-cost" id="expand-cost-overlay">100⚡</span>
         </button>
+      </div>
+      
+      <!-- LOG ATTIVITÀ CANVAS - Posizionato in basso a sinistra -->
+      <div class="canvas-log-panel">
+        <div class="canvas-log-header">📜 Log Attività</div>
+        <div id="canvas-log" class="canvas-log-content"></div>
       </div>
     </div>
   </div>
   <div id="ui">
     <!-- HEADER -->
     <div class="header">
-      <div>
-        <div class="game-title">🚩 Red Tide</div>
-        <div class="game-subtitle">The Revolution Simulator</div>
-      </div>
-      <div class="influence-display">
-        <div class="influence-label">💶 Fondi</div>
-        <div class="influence" id="money">0</div>
-      </div>
-      <div class="influence-display">
-        <div class="influence-label">⚡ Influenza</div>
-        <div class="influence" id="influence">0</div>
+      <div class="game-title-compact">
+        <span class="title-icon">🚩</span>
+        <div>
+          <div class="title-main">Red Tide</div>
+          <div class="title-sub">Revolution Simulator</div>
+        </div>
       </div>
     </div>
 
@@ -141,36 +160,46 @@
       </div>
     </div>
 
-    <!-- STATS GRID -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">⏱️</div>
-        <div class="stat-label">Tempo</div>
-        <div class="stat-value" id="time">0s</div>
+    <div class="divider"></div>
+
+    <!-- LOG ATTIVITÀ - Spostato qui per maggiore visibilità -->
+    <div class="panel log-panel">
+      <div class="panel-title">📜 Log Attività</div>
+      <div id="log" class="log-content"></div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <!-- DONATION BREAKDOWN -->
+    <div class="panel donation-panel">
+      <div class="panel-title">💰 Bilancio Economico (ogni 10s)</div>
+      
+      <!-- ENTRATE -->
+      <div class="panel-subtitle" style="color: #4ade80; margin-bottom: 8px;">📈 ENTRATE</div>
+      <div id="donation-breakdown" class="donation-list">
+        <!-- Popolato dinamicamente -->
       </div>
       
-      <div class="stat-card">
-        <div class="stat-icon">👥</div>
-        <div class="stat-label">Cittadini</div>
-        <div class="stat-value"><span id="citizen-count">0</span>/<span id="citizen-cap">20</span></div>
+      <div class="donation-total" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-bottom: 16px;">
+        <span class="donation-label">Totale Entrate</span>
+        <span class="donation-value" id="donation-total" style="color: #4ade80;">+0.0€/10s</span>
       </div>
       
-      <div class="stat-card">
-        <div class="stat-icon">✊</div>
-        <div class="stat-label">Convertiti</div>
-        <div class="stat-value" id="total-converts">0</div>
+      <!-- USCITE -->
+      <div class="panel-subtitle" style="color: #ef4444; margin-bottom: 8px;">📉 USCITE</div>
+      <div id="upkeep-breakdown" class="donation-list">
+        <!-- Popolato dinamicamente -->
       </div>
       
-      <div class="stat-card">
-        <div class="stat-icon">🤝</div>
-        <div class="stat-label">Compagni</div>
-        <div class="stat-value" id="comrades-count">0</div>
+      <div class="donation-total" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-bottom: 16px;">
+        <span class="donation-label">Totale Uscite</span>
+        <span class="donation-value" id="upkeep-total" style="color: #ef4444;">-0.0€/10s</span>
       </div>
       
-      <div class="stat-card">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-label">Spawn Rate</div>
-        <div class="stat-value" id="spawn-interval">2.5s</div>
+      <!-- BILANCIO NETTO -->
+      <div class="donation-total" style="border-top: 2px solid var(--accent-red); padding-top: 8px; font-weight: bold;">
+        <span class="donation-label">💵 BILANCIO NETTO</span>
+        <span class="donation-value" id="net-balance">+0.0€/10s</span>
       </div>
     </div>
     
@@ -240,33 +269,6 @@
     </div>
     
     <div class="divider"></div>
-    
-    <!-- METRICS -->
-    <div class="panel metrics-panel">
-      <div class="panel-title">📊 Metriche del Movimento</div>
-      
-      <div class="metric">
-        <div class="metric-header">
-          <span class="metric-name">🧠 Coscienza di Classe</span>
-          <span class="metric-value" id="consciousness-value">50%</span>
-        </div>
-        <div class="progress-bar modern">
-          <div class="progress-fill consciousness" id="consciousness-bar" style="width: 50%"></div>
-        </div>
-      </div>
-      
-      <div class="metric">
-        <div class="metric-header">
-          <span class="metric-name">📢 Potere Assembleare</span>
-          <span class="metric-value" id="assembly-value">0%</span>
-        </div>
-        <div class="progress-bar modern">
-          <div class="progress-fill assembly" id="assembly-bar" style="width: 0%"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="divider"></div>
 
     <!-- TOPICS -->
     <div class="panel topics-panel">
@@ -292,27 +294,27 @@
     <div class="panel actions-panel">
       <div class="panel-title">🎯 Azioni</div>
       <div class="action-buttons">
-        <button id="assembly" class="action-btn primary">
+        <button id="assembly" class="action-btn primary" title="Raduna i compagni per un'assemblea collettiva.&#10;&#10;+25 Coscienza di Classe (dura 10s)&#10;Costo: 50⚡ (aumenta ogni uso)&#10;&#10;Utile quando la coscienza è bassa per:&#10;• Ridurre abbandoni convertiti&#10;• Aumentare probabilità conversioni&#10;• Stabilizzare il movimento">
           <span class="btn-icon">📢</span>
           <div class="btn-content">
             <div class="btn-title">Assemblea Pubblica</div>
-            <div class="btn-subtitle"><span id="assembly-cost">30</span> influenza • +25% potenza</div>
+            <div class="btn-subtitle"><span id="assembly-cost">50</span>⚡ • +25 Coscienza (10s)</div>
           </div>
         </button>
         
-        <button id="restock-all" class="action-btn secondary">
+        <button id="restock-all" class="action-btn secondary" title="Stampa volantini, opuscoli e materiale propagandistico.&#10;&#10;Rifornisce tutte le tematiche di +10 stock&#10;Costo: Somma dei costi di tutte le tematiche&#10;&#10;Utile quando il materiale scarseggia per:&#10;• Evitare che i cittadini vadano via delusi&#10;• Mantenere alto il flusso di conversioni">
           <span class="btn-icon">📄</span>
           <div class="btn-content">
             <div class="btn-title">Stampa Volantini</div>
-            <div class="btn-subtitle">Rifornisci tutti i materiali</div>
+            <div class="btn-subtitle">Rifornisci tutte le tematiche (+10)</div>
           </div>
         </button>
         
-        <button id="expand" class="action-btn tertiary">
+        <button id="expand" class="action-btn tertiary" title="Espandi la capacità del circolo.&#10;&#10;+5 Capacità massima cittadini&#10;Costo: 100⚡ (raddoppia ogni uso)&#10;&#10;Utile quando il circolo è sempre pieno per:&#10;• Permettere più conversioni simultanee&#10;• Evitare code e impazienza&#10;• Scalare il movimento">
           <span class="btn-icon">🏗️</span>
           <div class="btn-content">
-            <div class="btn-title">Sala Più Grande</div>
-            <div class="btn-subtitle"><span id="expand-cost">150</span> influenza</div>
+            <div class="btn-title">Espandi Circolo</div>
+            <div class="btn-subtitle"><span id="expand-cost">100</span>⚡ • +5 Capacità</div>
           </div>
         </button>
       </div>
@@ -327,13 +329,6 @@
       </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- LOG -->
-    <div class="panel log-panel">
-      <div class="panel-title">📜 Log Attività</div>
-      <div id="log" class="log-content"></div>
-    </div>
   </div>
 </div>
 
