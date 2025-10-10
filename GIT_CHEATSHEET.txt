@@ -7,13 +7,17 @@
 └─────────────────────────────────────────────────────────┘
 
 📝 COMMIT RAPIDO (feature branch)
-   ./quick-commit.sh "feat: descrizione"
+   ./quick-commit.sh                    # Modalità interattiva
+   ./quick-commit.sh "feat: descrizione" # Con messaggio
 
 🌐 DEPLOY ONLINE (GitHub Pages)
    ./deploy.sh
 
 🧪 TEST LOCALE
    ./test-local.sh
+
+📊 VERIFICA STATO
+   ./check-deploy.sh
 
 
 ┌─────────────────────────────────────────────────────────┐
