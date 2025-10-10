@@ -8,9 +8,10 @@
 - `gh-pages` - Branch generato automaticamente per GitHub Pages
 
 ✅ **GitHub Actions:**
-- Workflow configurato in `.github/workflows/pages.yml`
-- Deploy automatico quando fai push su `main`
-- Build con Vite e deploy su GitHub Pages
+- Workflow unificato in `.github/workflows/pages.yml`
+- Build test su ogni push (tutti i branch)
+- Deploy automatico solo su push `main`
+- Un solo workflow per tutto
 
 ## 🚀 Workflow per Aggiornare il Sito
 

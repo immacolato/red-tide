@@ -3,8 +3,7 @@
 Un gioco di strategia e gestione dove guidi un movimento rivoluzionario dalla nascita alla vittoria.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-red)](https://immacolato.github.io/red-tide/)
-[![Deploy Status](https://github.com/immacolato/red-tide/actions/workflows/pages.yml/badge.svg)](https://github.com/immacolato/red-tide/actions)
-[![CI Build](https://github.com/immacolato/red-tide/actions/workflows/ci.yml/badge.svg)](https://github.com/immacolato/red-tide/actions)
+[![Build & Deploy](https://github.com/immacolato/red-tide/actions/workflows/pages.yml/badge.svg)](https://github.com/immacolato/red-tide/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
@@ -89,10 +88,10 @@ npm run dev
 ./check-deploy.sh
 ```
 
-#### Workflow Actions:
-- ✅ **Push su `main`** → Deploy automatico su GitHub Pages
-- ✅ **Push su `feature/**`** → Test build automatico (CI)
-- ✅ Feedback immediato su ogni push
+#### Workflow GitHub Actions:
+- ✅ **Ogni push** → Build test automatico
+- ✅ **Push su `main`** → Build + Deploy su GitHub Pages
+- ✅ Workflow unico e semplificato
 
 #### Workflow Manuale:
 

@@ -106,15 +106,17 @@ Quando usi `./quick-commit.sh` in modalità interattiva:
 
 ## 🔄 GitHub Actions
 
-Gli script triggherano automaticamente:
+Workflow unificato che si attiva automaticamente:
 
-### Su Push Feature Branch:
-- ✅ Workflow CI (build test)
+### Su Ogni Push (qualsiasi branch):
+- ✅ Build test automatico
 - ✅ Feedback immediato
 
 ### Su Push Main (dopo deploy.sh):
-- ✅ Workflow Deploy
+- ✅ Build test + Deploy automatico
 - ✅ Sito aggiornato in 1-2 min
+
+**Semplice!** Un solo workflow per tutto.
 
 ## 💡 Tips
 

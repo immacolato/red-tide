@@ -4,23 +4,24 @@
 
 Tutto è configurato e funzionante! Ogni azione ha il suo workflow automatico.
 
-## 🔄 Workflow Automatici Attivi
+## 🔄 Workflow Automatico Unico
 
-### 1. **CI Build Test** (`.github/workflows/ci.yml`)
-- ✅ **Trigger**: Push su `feature/**` branches
-- ✅ **Azioni**: 
-  - Installa dipendenze
-  - Esegue build di test
-  - Verifica che il build funzioni
-- ✅ **Risultato**: Feedback immediato se il codice ha problemi
+### **Build & Deploy** (`.github/workflows/pages.yml`)
 
-### 2. **Deploy to Pages** (`.github/workflows/pages.yml`)
-- ✅ **Trigger**: Push su `main` branch
-- ✅ **Azioni**:
-  - Installa dipendenze
-  - Build production
-  - Deploy su GitHub Pages
+Un unico workflow semplificato che fa tutto:
+
+#### Su OGNI Push (tutti i branch):
+- ✅ Installa dipendenze
+- ✅ Esegue build di test
+- ✅ Verifica che tutto funzioni
+- ✅ **Risultato**: Feedback immediato
+
+#### Su Push `main` (in più):
+- ✅ Build production
+- ✅ Deploy su GitHub Pages
 - ✅ **Risultato**: Sito live aggiornato in 1-2 minuti
+
+**Vantaggio:** Un solo workflow da gestire, più semplice e chiaro!
 
 ## 🛠️ Script Helper
 
@@ -103,24 +104,18 @@ npm run dev
 
 ## 🎯 Cosa Succede Automaticamente
 
-### Su Push Feature Branch:
-1. ✅ GitHub Actions esegue CI workflow
-2. ✅ Build di test automatico
-3. ✅ Vedi risultato su GitHub Actions tab
-4. ✅ Badge CI nel README si aggiorna
+### Su Ogni Push (qualsiasi branch):
+- ✅ Build test automatico
+- ✅ Feedback immediato se ci sono errori
 
-### Su Push Main Branch:
-1. ✅ GitHub Actions esegue Deploy workflow
-2. ✅ Build production
-3. ✅ Upload su GitHub Pages
-4. ✅ Sito live aggiornato in 1-2 minuti
-5. ✅ Badge Deploy nel README si aggiorna
+### Su Push Main (dopo deploy.sh):
+- ✅ Build test + Deploy
+- ✅ Sito aggiornato in 1-2 min
 
 ## 📊 Monitoraggio
 
 ### Badge nel README:
-- 🔴 Deploy Status: Mostra se ultimo deploy è riuscito
-- 🟢 CI Build: Mostra se ultimo build su feature è ok
+- � Build & Deploy: Stato build e deploy
 - 🔵 Live Demo: Link diretto al sito
 - 🟣 License: MIT
 
@@ -216,13 +211,13 @@ git stash pop            # Recupera modifiche
 
 ## 📋 Checklist Setup
 
-- ✅ CI workflow configurato
-- ✅ Deploy workflow configurato
+- ✅ Workflow unificato configurato (build + deploy)
 - ✅ Script helper creati e testati
 - ✅ Documentazione completa
 - ✅ Badge nel README
 - ✅ Cheat sheet creato
 - ✅ Workflow interattivo funzionante
+- ✅ Setup semplificato e facile da mantenere
 
 ## 🎉 Conclusione
 
