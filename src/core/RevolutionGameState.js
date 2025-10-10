@@ -126,10 +126,13 @@ export class RevolutionGameState {
    */
   calculateDonations() {
     let total = 0;
+    const assemblyBonuses = this.getAssemblyPowerBonuses();
+    const donationMultiplier = 1 + assemblyBonuses.donationBonus;
+    
     for (const [typeId, count] of Object.entries(this.convertsByType)) {
       const citizenType = RevolutionConfig.PHASE_1.citizenTypes.find(t => t.id === typeId);
       if (citizenType && count > 0) {
-        total += count * citizenType.donationRate;
+        total += count * citizenType.donationRate * donationMultiplier;
       }
     }
     return total;
@@ -208,8 +211,70 @@ export class RevolutionGameState {
    * Aggiorna il potere assembleare
    */
   updateAssemblyPower(change) {
+    const oldPower = this.assemblyPower;
     this.assemblyPower = Math.max(0, Math.min(100, this.assemblyPower + change));
     this.maxAssemblyPower = Math.max(this.maxAssemblyPower, this.assemblyPower);
+    
+    // Controlla se abbiamo superato una soglia importante
+    const oldTier = this.getAssemblyPowerTier(oldPower);
+    const newTier = this.getAssemblyPowerTier(this.assemblyPower);
+    
+    if (newTier > oldTier) {
+      this.addLog(`🔥 NUOVO LIVELLO! Potere Assembleare ${newTier}/4`, 'important');
+    }
+  }
+
+  /**
+   * Calcola la tier del potere assembleare (0-4)
+   */
+  getAssemblyPowerTier(power = null) {
+    const p = power !== null ? power : this.assemblyPower;
+    if (p > 75) return 4;   // Solo OLTRE 75%
+    if (p >= 50) return 3;  // 50-75%
+    if (p >= 25) return 2;  // 25-50%
+    if (p > 0) return 1;    // 1-25%
+    return 0;
+  }
+
+  /**
+   * Ottiene i bonus attivi del potere assembleare
+   * @returns {object} { conversionBonus, consciousnessDecayReduction, donationBonus }
+   */
+  getAssemblyPowerBonuses() {
+    const tier = this.getAssemblyPowerTier();
+    
+    switch(tier) {
+      case 4: // 75-100%
+        return {
+          conversionBonus: 0.20,      // +20% probabilità conversione
+          consciousnessDecayReduction: 0.30, // -30% decay coscienza
+          donationBonus: 0.10,         // +10% donazioni
+        };
+      case 3: // 50-75%
+        return {
+          conversionBonus: 0.15,
+          consciousnessDecayReduction: 0.20,
+          donationBonus: 0.05,
+        };
+      case 2: // 25-50%
+        return {
+          conversionBonus: 0.10,
+          consciousnessDecayReduction: 0.10,
+          donationBonus: 0,
+        };
+      case 1: // 1-25%
+        return {
+          conversionBonus: 0.05,
+          consciousnessDecayReduction: 0,
+          donationBonus: 0,
+        };
+      default: // 0%
+        return {
+          conversionBonus: 0,
+          consciousnessDecayReduction: 0,
+          donationBonus: 0,
+        };
+    }
   }
 
   /**
@@ -231,7 +296,18 @@ export class RevolutionGameState {
     if (this.spendInfluence(cost)) {
       this.updateAssemblyPower(25);
       this.assemblyLevel++;
+      
+      // Mostra i bonus attivi
+      const bonuses = this.getAssemblyPowerBonuses();
+      let bonusText = [];
+      if (bonuses.conversionBonus > 0) bonusText.push(`+${(bonuses.conversionBonus*100).toFixed(0)}% conversioni`);
+      if (bonuses.consciousnessDecayReduction > 0) bonusText.push(`-${(bonuses.consciousnessDecayReduction*100).toFixed(0)}% decay`);
+      if (bonuses.donationBonus > 0) bonusText.push(`+${(bonuses.donationBonus*100).toFixed(0)}% donazioni`);
+      
       this.addLog(`📢 Assemblea organizzata! (⚡${cost}) - Liv.${this.assemblyLevel}`);
+      if (bonusText.length > 0) {
+        this.addLog(`   Effetti: ${bonusText.join(', ')}`);
+      }
       return true;
     }
     this.addLog('❌ ⚡ insufficiente per assemblea');
@@ -409,11 +485,12 @@ export class RevolutionGameState {
         
         switch (effect.type) {
           case 'passive_restock':
-            // Rifornisce tutte le tematiche gradualmente
-            for (const topic of this.topics) {
-              if (Math.random() < 0.3) { // 30% chance per topic
-                topic.restock(1);
-              }
+            // Rifornisce UNA tematica casuale di +1 stock
+            // 1 volontario = ~1 stock/sec totale (distribuito tra le tematiche)
+            // Con 5 tematiche, serve ~5 volontari per tenere tutte al massimo
+            if (this.topics.length > 0) {
+              const randomTopic = this.topics[Math.floor(Math.random() * this.topics.length)];
+              randomTopic.restock(1);
             }
             break;
             

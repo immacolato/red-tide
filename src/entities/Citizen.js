@@ -107,9 +107,10 @@ export class Citizen {
    * @param {object} targetPos - Posizione target {x, y}
    * @param {object} topic - Tematica del banco
    * @param {number} consciousness - Coscienza di classe globale
+   * @param {number} assemblyConversionBonus - Bonus conversione dal potere assembleare
    * @returns {object} Risultato dell'update
    */
-  updateToDesk(dt, targetPos, topic, consciousness) {
+  updateToDesk(dt, targetPos, topic, consciousness, assemblyConversionBonus = 0) {
     if (!this.targetDesk) {
       this.state = 'leave';
       return { action: 'leave', reason: 'no_desk' };
@@ -129,7 +130,7 @@ export class Citizen {
 
     // Raggiunto banco
     if (dist < 12) {
-      return this.tryConvert(topic, consciousness);
+      return this.tryConvert(topic, consciousness, assemblyConversionBonus);
     }
 
     return { action: 'moving' };
@@ -139,9 +140,10 @@ export class Citizen {
    * Tenta di convertire il cittadino
    * @param {object} topic - Tematica
    * @param {number} consciousness - Coscienza di classe globale
+   * @param {number} assemblyConversionBonus - Bonus conversione dal potere assembleare
    * @returns {object} Risultato della conversione
    */
-  tryConvert(topic, consciousness) {
+  tryConvert(topic, consciousness, assemblyConversionBonus = 0) {
     if (!topic) {
       this.state = 'leave';
       return { action: 'leave', reason: 'no_topic' };
@@ -157,11 +159,12 @@ export class Citizen {
       };
     }
 
-    // Calcola probabilità di conversione
+    // Calcola probabilità di conversione (con bonus assembleare)
     const conversionProb = RevolutionUtils.getConversionProbability(
       topic,
       this.type,
-      consciousness
+      consciousness,
+      assemblyConversionBonus
     );
 
     // Considera anche il mood (effetto ridotto)

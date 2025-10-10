@@ -22,13 +22,14 @@ export class RevolutionUtils {
   }
 
   /**
-   * Calcola la probabilità di conversione di un cittadino
-   * @param {object} topic - La tematica presentata
-   * @param {string} citizenType - Tipo di cittadino (es: "student", "worker")
-   * @param {number} consciousness - Livello di coscienza globale (0-100)
+   * Calcola probabilità di conversione di un cittadino
+   * @param {object} topic - Tematica
+   * @param {object} citizenType - Tipo di cittadino
+   * @param {number} consciousness - Coscienza di classe (0-100)
+   * @param {number} assemblyBonus - Bonus dal potere assembleare (0-1, default 0)
    * @returns {number} Probabilità 0-1
    */
-  static getConversionProbability(topic, citizenType, consciousness) {
+  static getConversionProbability(topic, citizenType, consciousness, assemblyBonus = 0) {
     // Base: appeal della tematica (0-1) - RIDOTTA drasticamente
     let baseProb = (topic.appeal || 0.5) * 0.4; // Ridotta del 60%
 
@@ -47,11 +48,12 @@ export class RevolutionUtils {
     // Penalità generale del 30% per rendere tutto più difficile
     baseProb *= 0.7;
 
+    // 🔥 BONUS DAL POTERE ASSEMBLEARE (additivo, dopo la penalità generale)
+    baseProb += assemblyBonus;
+
     // Clamp tra 0.02 e 0.65 (massimo molto più basso!)
     return Math.max(0.02, Math.min(0.65, baseProb));
-  }
-
-  /**
+  }  /**
    * Calcola il costo di rifornimento di una tematica
    * @param {number} amount - Quantità da rifornire
    * @param {number} baseCost - Costo base della tematica

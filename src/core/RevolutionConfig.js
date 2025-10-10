@@ -196,14 +196,13 @@ export const RevolutionConfig = {
         id: 'assembly',
         name: 'Assemblea Pubblica',
         icon: '📢',
-        description: 'Organizza un\'assemblea per aumentare la coscienza di classe',
-        tooltip: 'Raduna i compagni per un\'assemblea collettiva.\n\n+25 Coscienza di Classe (dura 10s)\nCosto: 50⚡ (aumenta ogni uso)\n\nUtile quando la coscienza è bassa per:\n• Ridurre abbandoni convertiti\n• Aumentare probabilità conversioni\n• Stabilizzare il movimento',
+        description: 'Organizza un\'assemblea per aumentare il Potere Assembleare',
+        tooltip: 'Organizza un\'assemblea per aumentare il Potere Assembleare.\n\nEffetto: +25% Potere Assembleare (permanente per la fase)\nCosto: 50⚡ (aumenta ogni uso: +60%)\n\nIl Potere Assembleare fornisce bonus permanenti:\n• Aumenta probabilità conversioni (fino a +20%)\n• Riduce decay coscienza (fino a -30%)\n• Aumenta donazioni (fino a +10%)\n\nInvesti presto per massimizzare i benefici!',
         baseCost: 50,
         costMultiplier: 1.6,
         effect: {
-          type: 'consciousness_boost',
-          value: 25,
-          duration: 10, // secondi
+          type: 'assembly_power_boost',
+          value: 25, // +25% per ogni assemblea
         },
       },
       {
@@ -236,16 +235,16 @@ export const RevolutionConfig = {
         name: 'Volontario',
         icon: '✊',
         description: 'Distribuisce volantini passivamente',
-        tooltip: 'Volontario attivista che rifornisce automaticamente le tematiche.\n\nEffetto: +0.2 stock/secondo a tutte le tematiche\nStipendio: 5€ ogni 10 secondi (30€/min)\n\nAssunzione:\n• 1°: 150⚡\n• 2°: 375⚡ (×2.5)\n\nMax: 2 volontari\n\n⚠️ Devi pagare ogni 10s o smette di lavorare!',
+        tooltip: 'Volontario attivista che rifornisce automaticamente le tematiche.\n\nEffetto: +1 stock/secondo a UNA tematica casuale\nStipendio: 5€ ogni 10 secondi (30€/min)\n\nAssunzione:\n• 1°: 150⚡\n• 2°: 375⚡ (×2.5)\n• 3°: 938⚡ (×2.5)\n• 4°: 2344⚡ (×2.5)\n\nBilanciamento:\n• 1 volontario: Copre ~5 cittadini/spawn\n• 2 volontari: Copre ~10-12 cittadini\n• 3+ volontari: Per sale molto affollate (20+ cap)\n\nMax: 4 volontari\n\n⚠️ Devi pagare ogni 10s o smette di lavorare!',
         baseCost: 150,
         costMultiplier: 2.5,
         upkeep: 5,
         paymentInterval: 10,
         effect: {
           type: 'passive_restock',
-          value: 0.2,
+          value: 1, // +1 stock/sec a una tematica casuale
         },
-        maxHire: 2,
+        maxHire: 4, // Aumentato da 2 a 4
       },
       {
         id: 'organizer',

@@ -95,13 +95,24 @@ class RevolutionSpawnSystem {
         const baseChance = 0.6 + state.consciousness / 200; // 0.6 - 1.1
 
         if (Math.random() < baseChance) {
-          this.spawnCitizen(canvasWidth, canvasHeight, phase);
+          // Spawn batch: più cittadini insieme quando hai più capacità
+          const spawnBatchSize = Math.min(
+            Math.ceil(state.citizenCap / 8), // 1 ogni 8 cap (15→2, 20→3, 25→4, 30→4, etc.)
+            state.citizenCap - state.citizens.length, // Non superare il cap
+            3 // Max 3 contemporaneamente per non sovraffollare
+          );
 
-          // Possibilità di secondo cittadino se coscienza alta
+          for (let i = 0; i < spawnBatchSize; i++) {
+            if (state.citizens.length < state.citizenCap) {
+              this.spawnCitizen(canvasWidth, canvasHeight, phase);
+            }
+          }
+
+          // Bonus spawn se coscienza molto alta
           if (
             state.citizens.length < state.citizenCap &&
             state.consciousness > 70 &&
-            Math.random() < 0.4
+            Math.random() < 0.3
           ) {
             this.spawnCitizen(canvasWidth, canvasHeight, phase);
           }
@@ -109,11 +120,15 @@ class RevolutionSpawnSystem {
       }
     }
 
-    // Flusso garantito
-    const minCitizens = Math.max(2, state.citizenCap * 0.15);
-    if (state.citizens.length < minCitizens && Math.random() < 0.03) {
+    // Flusso garantito - scala meglio con l'espansione
+    const minCitizens = Math.max(3, state.citizenCap * 0.2); // 20% del cap (era 15%)
+    if (state.citizens.length < minCitizens && Math.random() < 0.05) { // Più frequente (era 0.03)
       if (state.citizens.length < state.citizenCap) {
+        // Spawn 1-2 cittadini per raggiungere il minimo più velocemente
         this.spawnCitizen(canvasWidth, canvasHeight, phase);
+        if (state.citizens.length < minCitizens && state.citizens.length < state.citizenCap && Math.random() < 0.5) {
+          this.spawnCitizen(canvasWidth, canvasHeight, phase);
+        }
       }
     }
   }
@@ -428,7 +443,11 @@ function update(dt) {
     const activeComrades = gameState.comrades.filter(c => c.active && c.working).length;
     const comradePenalty = activeComrades * 0.15; // 0.15 punti/sec per compagno
     
-    const totalDecay = (decayRate + comradePenalty) * dt;
+    // 🔥 RIDUZIONE DECAY DAL POTERE ASSEMBLEARE
+    const assemblyBonuses = gameState.getAssemblyPowerBonuses();
+    const decayReduction = 1 - assemblyBonuses.consciousnessDecayReduction;
+    
+    const totalDecay = (decayRate + comradePenalty) * decayReduction * dt;
     const change = Math.sign(diff) * Math.min(absDistance, totalDecay);
     gameState.updateConsciousness(change, '');
   }
@@ -503,7 +522,8 @@ function handleCitizenToDesk(citizen, dt) {
   };
 
   const topic = gameState.topics[desk.topicIndex];
-  const result = citizen.updateToDesk(dt, targetPos, topic, gameState.consciousness);
+  const assemblyBonuses = gameState.getAssemblyPowerBonuses();
+  const result = citizen.updateToDesk(dt, targetPos, topic, gameState.consciousness, assemblyBonuses.conversionBonus);
 
   // Movimento
   const speed = 80 + 40 * citizen.receptivity;
@@ -781,159 +801,144 @@ function render() {
     }
   }
 
-  // Area compagni - rettangolo verticale a destra
-  if (gameState.comrades.some(c => c.active)) {
-    const activeComrades = gameState.comrades.filter(c => c.active);
-    const areaW = 110;
-    const areaH = Math.min(H - 150, 90 * activeComrades.length + 100); // Spacing aumentato a 90
-    const areaX = W - areaW - 10; // 10px margin from right
-    const areaY = 70; // Abbassato per lasciare spazio alla scritta sopra
-    
-    // Etichetta "COMPAGNI" sopra il rettangolo
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('COMPAGNI', areaX + areaW / 2, areaY - 20);
-    
-    ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
-    ctx.fillRect(areaX, areaY, areaW, areaH);
-    ctx.strokeStyle = 'rgba(231, 76, 60, 0.8)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(areaX, areaY, areaW, areaH);
-  }
-
-  // Compagni (lavoratori) - disposizione verticale compatta a destra
+  // Compagni (lavoratori) - icone raggruppate per tipo in basso a destra
   const activeComrades = gameState.comrades.filter(c => c.active);
   
-  for (let i = 0; i < activeComrades.length; i++) {
-    const comrade = activeComrades[i];
-    // Le posizioni x,y sono già impostate quando vengono creati o caricati
-
-    const comradeRadius = 14; // Più piccoli per layout verticale compatto
-
-    // Ombra
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.beginPath();
-    ctx.arc(comrade.x + 2, comrade.y + 2, comradeRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Compagno - cerchio con colore basato su stato e tipo
-    ctx.fillStyle = comrade.getColor();
-    ctx.beginPath();
-    ctx.arc(comrade.x, comrade.y, comradeRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Bordo
-    if (comrade.working) {
-      ctx.shadowColor = '#e74c3c';
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = '#e74c3c';
-    } else {
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#95a5a6';
-    }
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // Icona del tipo di compagno al centro (più piccola)
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    const iconMap = {
-      'volunteer': '✊',
-      'organizer': '🎯',
-      'educator': '👨‍🏫'
-    };
-    const icon = iconMap[comrade.type] || '👤';
-    ctx.fillText(icon, comrade.x, comrade.y);
-    ctx.textBaseline = 'alphabetic';
-
-    // Nome SOTTO compatto
-    const labelY = comrade.y + comradeRadius + 12;
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    const statusIcon = comrade.working ? '✅' : '⚠️';
-    
-    // Nome abbreviato per risparmiare spazio
-    const shortName = comrade.name.split(' ')[0]; // Solo il primo nome
-    const comradeLabel = `${statusIcon} ${shortName}`;
-    
-    ctx.fillStyle = comrade.working ? '#2ecc71' : '#e74c3c';
-    ctx.font = 'bold 9px sans-serif';
-    ctx.fillText(comradeLabel, comrade.x, labelY);
-    
-    // Pulsante X per rimuovere (spostato più in alto a destra per non coprire l'icona)
-    const btnX = comrade.x + comradeRadius + 2;
-    const btnY = comrade.y - comradeRadius - 2;
-    const btnRadius = 7;
-    
-    // Background pulsante X
-    ctx.fillStyle = 'rgba(231, 76, 60, 0.9)';
-    ctx.beginPath();
-    ctx.arc(btnX, btnY, btnRadius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Bordo pulsante
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    // X nel pulsante
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(btnX - 4, btnY - 4);
-    ctx.lineTo(btnX + 4, btnY + 4);
-    ctx.moveTo(btnX + 4, btnY - 4);
-    ctx.lineTo(btnX - 4, btnY + 4);
-    ctx.stroke();
-    
-    // Salva coordinate pulsante per click handler
-    comrade.removeButton = { x: btnX, y: btnY, r: btnRadius };
-    
-    // Barra pagamento SOTTO (più piccola)
-    const barWidth = 50;
-    const barHeight = 5;
-    const barX = comrade.x - barWidth / 2;
-    const barY = comrade.y + comradeRadius + 20;
-    
-    // Background barra con bordo
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
-    ctx.fillStyle = 'rgba(50, 50, 50, 0.8)';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    
-    if (comrade.working) {
-      // Progress
-      const progress = 1 - (comrade.getTimeUntilPayment() / comrade.paymentInterval);
-      let progressColor;
-      if (progress > 0.8) {
-        progressColor = '#e74c3c'; // Rosso - pagamento imminente
-      } else if (progress > 0.5) {
-        progressColor = '#f39c12'; // Arancione
-      } else {
-        progressColor = '#2ecc71'; // Verde - appena pagato
+  if (activeComrades.length > 0) {
+    // Raggruppa compagni per tipo
+    const comradesByType = {};
+    for (const comrade of activeComrades) {
+      if (!comradesByType[comrade.type]) {
+        comradesByType[comrade.type] = [];
       }
-      ctx.fillStyle = progressColor;
-      ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+      comradesByType[comrade.type].push(comrade);
+    }
+    
+    // Posizionamento in basso a destra
+    const iconSize = 40; // Dimensione icona
+    const spacing = 10; // Spazio tra icone
+    const marginRight = 20;
+    const marginBottom = 120; // Sopra il log
+    
+    const types = Object.keys(comradesByType);
+    let xOffset = W - marginRight;
+    
+    // Disegna dall'ultima all'indietro (così la prima è a destra)
+    for (let i = types.length - 1; i >= 0; i--) {
+      const type = types[i];
+      const comradesOfType = comradesByType[type];
+      const count = comradesOfType.length;
+      const firstComrade = comradesOfType[0]; // Usa il primo per info
       
-      // Tempo rimanente in secondi
-      const timeLeft = Math.ceil(comrade.getTimeUntilPayment());
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px monospace';
+      // Controlla se almeno uno sta lavorando
+      const anyWorking = comradesOfType.some(c => c.working);
+      const allWorking = comradesOfType.every(c => c.working);
+      
+      xOffset -= iconSize;
+      const iconX = xOffset;
+      const iconY = H - marginBottom;
+      
+      // Ombra
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(iconX + 3, iconY + 3, iconSize, iconSize);
+      
+      // Background icona - rosso se nessuno lavora, arancione se misto, verde se tutti
+      if (allWorking) {
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.3)'; // Verde
+      } else if (anyWorking) {
+        ctx.fillStyle = 'rgba(230, 126, 34, 0.3)'; // Arancione
+      } else {
+        ctx.fillStyle = 'rgba(231, 76, 60, 0.3)'; // Rosso
+      }
+      ctx.fillRect(iconX, iconY, iconSize, iconSize);
+      
+      // Bordo
+      if (allWorking) {
+        ctx.strokeStyle = '#2ecc71';
+      } else if (anyWorking) {
+        ctx.strokeStyle = '#e67e22';
+      } else {
+        ctx.strokeStyle = '#e74c3c';
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeRect(iconX, iconY, iconSize, iconSize);
+      
+      // Icona emoji del tipo
+      const iconMap = {
+        'volunteer': '✊',
+        'organizer': '🎯',
+        'educator': '👨‍🏫'
+      };
+      const emoji = iconMap[type] || '👤';
+      ctx.font = '24px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`${timeLeft}s`, comrade.x, barY + barHeight + 10);
-    } else {
-      // Se non sta lavorando, mostra "UNPAID"
-      ctx.fillStyle = '#e74c3c';
-      ctx.fillRect(barX, barY, barWidth, barHeight);
+      ctx.textBaseline = 'middle';
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 8px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('UNPAID!', comrade.x, barY + barHeight + 10);
+      ctx.fillText(emoji, iconX + iconSize / 2, iconY + iconSize / 2);
+      
+      // Contatore in alto a destra (se più di uno)
+      if (count > 1) {
+        const counterSize = 18;
+        const counterX = iconX + iconSize - counterSize / 2;
+        const counterY = iconY - counterSize / 2;
+        
+        // Background contatore
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(counterX, counterY, counterSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Bordo contatore
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Numero
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(count, counterX, counterY);
+      }
+      
+      // Pulsante X per rimuovere UNO (in alto a sinistra)
+      const btnSize = 16;
+      const btnX = iconX - btnSize / 2;
+      const btnY = iconY - btnSize / 2;
+      
+      // Background pulsante X
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.9)';
+      ctx.beginPath();
+      ctx.arc(btnX, btnY, btnSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Bordo pulsante
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // X nel pulsante
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(btnX - 4, btnY - 4);
+      ctx.lineTo(btnX + 4, btnY + 4);
+      ctx.moveTo(btnX + 4, btnY - 4);
+      ctx.lineTo(btnX - 4, btnY + 4);
+      ctx.stroke();
+      
+      // Salva dati per click handler (usa il primo comrade del tipo)
+      firstComrade.removeButton = {
+        x: btnX,
+        y: btnY,
+        r: btnSize / 2,
+        type: type, // Salva il tipo per sapere quale rimuovere
+        iconX: iconX,
+        iconY: iconY,
+        iconSize: iconSize
+      };
+      
+      xOffset -= spacing; // Spazio per l'icona successiva
     }
   }
 
@@ -1065,10 +1070,13 @@ function updateHUD() {
     consciousnessOverlayEl.textContent = `${Math.round(stats.consciousness)}%${warning}`;
   }
 
-  // Potere assembleare - HUD overlay
+  // Potere assembleare - HUD overlay con indicatore tier
   const assemblyPowerOverlayEl = document.getElementById('assembly-power-overlay');
   if (assemblyPowerOverlayEl) {
-    assemblyPowerOverlayEl.textContent = `${Math.round(stats.assemblyPower)}%`;
+    const tier = gameState.getAssemblyPowerTier();
+    const flames = '🔥'.repeat(tier);
+    const flameText = tier > 0 ? ` ${flames}` : '';
+    assemblyPowerOverlayEl.textContent = `${Math.round(stats.assemblyPower)}%${flameText}`;
   }
 
   // Barra coscienza con indicatore di rischio
@@ -1090,13 +1098,18 @@ function updateHUD() {
     consValue.textContent = `${Math.round(stats.consciousness)}%${warning}`;
   }
 
-  // Assemblea power
+  // Assemblea power con indicatore tier
   const assemblyBar = document.getElementById('assembly-bar');
   if (assemblyBar) {
     assemblyBar.style.width = `${stats.assemblyPower}%`;
   }
   const assemblyValue = document.getElementById('assembly-value');
-  if (assemblyValue) assemblyValue.textContent = `${Math.round(stats.assemblyPower)}%`;
+  if (assemblyValue) {
+    const tier = gameState.getAssemblyPowerTier();
+    const flames = '🔥'.repeat(tier);
+    const flameText = tier > 0 ? ` ${flames}` : '';
+    assemblyValue.textContent = `${Math.round(stats.assemblyPower)}%${flameText}`;
+  }
 
   // Fase info
   const phaseNameEl = document.getElementById('phase-name');
@@ -1527,6 +1540,22 @@ function setupEventListeners() {
         }
       }
       
+      // Check se il mouse è sopra un'icona compagno
+      if (!overButton) {
+        for (const comrade of gameState.comrades) {
+          if (!comrade.active || !comrade.removeButton) continue;
+          
+          const btn = comrade.removeButton;
+          // Check se sopra l'icona intera
+          if (mouseX >= btn.iconX && mouseX <= btn.iconX + btn.iconSize &&
+              mouseY >= btn.iconY && mouseY <= btn.iconY + btn.iconSize) {
+            overButton = true;
+            // TODO: Mostra tooltip con info dettagliate
+            break;
+          }
+        }
+      }
+      
       // Check se il mouse è sopra un pulsante + di un desk
       if (!overButton) {
         for (const desk of gameState.infoDesks) {
@@ -1553,9 +1582,8 @@ function setupEventListeners() {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
-      // Check se si clicca sul pulsante X per rimuovere un compagno
-      for (let i = gameState.comrades.length - 1; i >= 0; i--) {
-        const comrade = gameState.comrades[i];
+      // Check se si clicca sul pulsante X per rimuovere un compagno (per tipo)
+      for (const comrade of gameState.comrades) {
         if (!comrade.active || !comrade.removeButton) continue;
         
         const btn = comrade.removeButton;
@@ -1564,23 +1592,19 @@ function setupEventListeners() {
         const btnDist = Math.sqrt(btnDx * btnDx + btnDy * btnDy);
         
         if (btnDist < btn.r) {
-          // Click sul pulsante X - rimuovi compagno
-          comrade.deactivate();
-          gameState.addLog(`❌ ${comrade.name} rimosso`);
+          // Click sul pulsante X - rimuovi UNO del tipo
+          const type = btn.type;
+          const comradesOfType = gameState.comrades.filter(c => c.active && c.type === type);
           
-          // Riposiziona i compagni attivi rimanenti
-          const activeComrades = gameState.comrades.filter(c => c.active);
-          const areaW = 110;
-          const areaCenterX = W - areaW - 10 + areaW / 2;
-          const spacing = 90; // Aumentato per più spazio tra compagni
-          const startY = 110;
-          activeComrades.forEach((c, index) => {
-            c.x = areaCenterX;
-            c.y = startY + (index * spacing);
-          });
-          
-          renderComradesPanel(); // Aggiorna pannello laterale
-          updateHUD(); // Aggiorna conteggio nell'HUD
+          if (comradesOfType.length > 0) {
+            // Rimuovi l'ultimo di quel tipo
+            const toRemove = comradesOfType[comradesOfType.length - 1];
+            toRemove.deactivate();
+            gameState.addLog(`❌ ${toRemove.name} rimosso`);
+            
+            renderComradesPanel(); // Aggiorna pannello laterale
+            updateHUD(); // Aggiorna conteggio nell'HUD
+          }
           return;
         }
       }
@@ -1691,15 +1715,8 @@ function setupEventListeners() {
             return;
           }
           
-          // Calcola posizione verticale a destra del canvas (centrato nell'area)
-          const areaW = 110;
-          const areaCenterX = W - areaW - 10 + areaW / 2;
-          const comradeIndex = gameState.comrades.filter(c => c.active).length;
-          const spacing = 90; // Spaziatura verticale tra compagni (aumentata per più spazio)
-          const startY = 110; // Inizia dalla parte alta dentro l'area
-          
-          const comradeX = areaCenterX;
-          const comradeY = startY + (comradeIndex * spacing);
+          // Posizionamento non necessario - i compagni sono renderizzati come icone raggruppate
+          // Le coordinate x,y sono gestite dal rendering, non dalla creazione
           
           // Calcola il costo scalato in base a quanti dello stesso tipo esistono
           const calculatedCost = gameState.getComradeHireCost(
@@ -1717,8 +1734,8 @@ function setupEventListeners() {
             upkeep: comradeData.upkeep,
             paymentInterval: comradeData.paymentInterval || 30,
             effect: comradeData.effect,
-            x: comradeX,
-            y: comradeY,
+            x: 0, // Le icone non hanno posizione fissa
+            y: 0,
           }, gameState.time, calculatedCost);
 
           // hireComrade gestisce internamente il pagamento e i log
