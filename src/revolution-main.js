@@ -640,7 +640,8 @@ function render() {
     };
 
     const cornerRadius = 8;
-    const isDragging = desk.isDragging;
+    // Verifica se QUESTO desk specifico è quello in fase di drag
+    const isDragging = (draggedDesk === desk);
 
     // Ombra arrotondata (più grande se sta draggando)
     ctx.fillStyle = isDragging ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)';
