@@ -45,6 +45,12 @@ export class RevolutionUtils {
     const impact = this.parseImpact(topic.impact);
     baseProb *= (0.85 + impact * 0.05); // Impatto ridotto
 
+    // 🎯 AFFINITÀ CITTADINO-TEMATICA (moltiplicatore basato su tipo)
+    if (topic.affinities && citizenType && citizenType.id) {
+      const affinity = topic.affinities[citizenType.id] || 1.0;
+      baseProb *= affinity;
+    }
+
     // Penalità generale del 30% per rendere tutto più difficile
     baseProb *= 0.7;
 

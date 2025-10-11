@@ -1545,3 +1545,383 @@ canvas {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(231, 76, 60, 0.5);
 }
+
+/* ============================================================================
+   DEBUG TOOLS
+   ============================================================================ */
+
+.debug-toggle {
+  background: rgba(243, 156, 18, 0.2);
+  border: 1px solid var(--accent-warning);
+  color: var(--accent-warning);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.debug-toggle:hover {
+  background: var(--accent-warning);
+  color: #0a0a0a;
+  transform: scale(1.1);
+}
+
+.debug-modal-content {
+  max-width: 600px;
+}
+
+.debug-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.debug-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: var(--accent-warning);
+  font-weight: 700;
+}
+
+.debug-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.debug-btn {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.3), rgba(41, 128, 185, 0.3));
+  border: 1px solid #3498db;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.debug-btn:hover {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.debug-btn:active {
+  transform: translateY(0);
+}
+
+.debug-btn.danger {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.3), rgba(192, 57, 43, 0.3));
+  border-color: var(--accent-red);
+}
+
+.debug-btn.danger:hover {
+  background: linear-gradient(135deg, var(--accent-red), #c0392b);
+}
+
+/* ============================================================================
+   MODAL ACQUISTO DESK
+   ============================================================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-red);
+  border-radius: var(--radius);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), transparent);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--accent-red);
+  font-weight: 700;
+}
+
+.modal-close {
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid var(--accent-red);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--accent-red);
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-subtitle {
+  margin: 0 0 20px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+.purchasable-desks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.desk-card {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.desk-card:hover:not(.desk-card-owned) {
+  border-color: var(--accent-red);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(231, 76, 60, 0.3);
+}
+
+.desk-card-owned {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: var(--accent-success);
+  background: rgba(39, 174, 96, 0.1);
+}
+
+.desk-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.desk-card-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.desk-card-title {
+  flex: 1;
+}
+
+.desk-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.desk-card-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.desk-card-owned-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--accent-success);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.desk-card-description {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.desk-card-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.desk-card-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.desk-card-stat-label {
+  font-weight: 600;
+}
+
+.desk-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.desk-card-difficulty {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.desk-card-difficulty.easy {
+  background: rgba(39, 174, 96, 0.2);
+  color: var(--accent-success);
+}
+
+.desk-card-difficulty.medium {
+  background: rgba(243, 156, 18, 0.2);
+  color: var(--accent-warning);
+}
+
+.desk-card-difficulty.hard,
+.desk-card-difficulty.very_hard,
+.desk-card-difficulty.extreme {
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--accent-danger);
+}
+
+.desk-card-appeal {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.desk-card-appeal-bar {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.desk-card-appeal-fill {
+  height: 100%;
+  background: var(--accent-success);
+  transition: width 0.3s ease;
+}
+
+.desk-purchase-btn {
+  background: linear-gradient(135deg, var(--accent-red), #c0392b);
+  border: 1px solid var(--accent-red);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.desk-purchase-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b, var(--accent-red));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.desk-purchase-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.desk-purchase-btn:disabled {
+  background: rgba(100, 100, 100, 0.3);
+  border-color: rgba(100, 100, 100, 0.5);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+  .modal-content {
+    max-width: 95vw;
+  }
+
+  .purchasable-desks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+  }
+}

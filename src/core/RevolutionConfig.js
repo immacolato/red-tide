@@ -73,7 +73,7 @@ export const RevolutionConfig = {
       background: '#1a1a1a',
     },
     
-    // Tematiche disponibili in questa fase
+    // Tematiche disponibili in questa fase (STARTER - gratuite all'inizio)
     topics: [
       {
         id: 'wage_stagnation',
@@ -84,8 +84,17 @@ export const RevolutionConfig = {
         difficulty: 'easy',
         impact: 'medium',
         cost: 15,
-        stock: 5,
+        stock: 10,
         appeal: 0.8,
+        starter: true,
+        // Affinità per tipo di cittadino (moltiplicatore probabilità conversione)
+        affinities: {
+          worker: 1.3,      // +30% per lavoratori
+          precarious: 1.4,  // +40% per precari
+          unemployed: 1.2,  // +20% per disoccupati
+          student: 0.9,     // -10% per studenti
+          intellectual: 1.0, // neutrale per intellettuali
+        },
       },
       {
         id: 'gig_economy',
@@ -96,8 +105,16 @@ export const RevolutionConfig = {
         difficulty: 'easy',
         impact: 'high',
         cost: 20,
-        stock: 5,
+        stock: 10,
         appeal: 0.85,
+        starter: true,
+        affinities: {
+          worker: 1.1,      // +10% per lavoratori
+          precarious: 1.5,  // +50% per precari (TEMA PERFETTO)
+          unemployed: 1.3,  // +30% per disoccupati
+          student: 1.2,     // +20% per studenti (rider delivery)
+          intellectual: 0.9, // -10% per intellettuali
+        },
       },
       {
         id: 'housing_crisis',
@@ -108,8 +125,16 @@ export const RevolutionConfig = {
         difficulty: 'medium',
         impact: 'high',
         cost: 25,
-        stock: 3,
+        stock: 10,
         appeal: 0.75,
+        starter: true,
+        affinities: {
+          worker: 1.2,      // +20% per lavoratori (affitti cari)
+          precarious: 1.3,  // +30% per precari (affitti impossibili)
+          unemployed: 1.1,  // +10% per disoccupati
+          student: 1.5,     // +50% per studenti (TEMA PERFETTO)
+          intellectual: 1.1, // +10% per intellettuali
+        },
       },
       {
         id: 'mental_health',
@@ -120,8 +145,265 @@ export const RevolutionConfig = {
         difficulty: 'medium',
         impact: 'medium',
         cost: 18,
-        stock: 4,
+        stock: 10,
         appeal: 0.7,
+        starter: true,
+        affinities: {
+          worker: 1.3,      // +30% per lavoratori (burnout)
+          precarious: 1.4,  // +40% per precari (ansia costante)
+          unemployed: 1.2,  // +20% per disoccupati
+          student: 1.3,     // +30% per studenti (ansia universitaria)
+          intellectual: 1.1, // +10% per intellettuali
+        },
+      },
+    ],
+    
+    // Tematiche ACQUISTABILI (desk aggiuntivi da comprare)
+    purchasableTopics: [
+      // FACILI (20-30€)
+      {
+        id: 'climate_crisis',
+        name: 'Crisi Climatica',
+        icon: '🌍',
+        description: 'Emergenza climatica e greenwashing',
+        tooltip: 'Tema: Crisi climatica e inazione politica\n\nDifficoltà: ⭐ Facile\nImpatto: ⭐⭐⭐ Alto\nAppeal: 80%\n\nTrasversale, convince molti.\nPrezzo desk: 25€\nCosto rifornimento: 18€',
+        difficulty: 'easy',
+        impact: 'high',
+        cost: 18,
+        stock: 10,
+        appeal: 0.8,
+        purchasePrice: 25,
+        affinities: {
+          worker: 1.1,
+          precarious: 1.1,
+          unemployed: 1.0,
+          student: 1.5,     // +50% studenti (attivismo climatico)
+          intellectual: 1.3, // +30% intellettuali
+        },
+      },
+      {
+        id: 'education_cuts',
+        name: 'Tagli Istruzione',
+        icon: '📚',
+        description: 'Scuola e università sottofinanziate',
+        tooltip: 'Tema: Tagli all\'istruzione pubblica\n\nDifficoltà: ⭐ Facile\nImpatto: ⭐⭐ Medio\nAppeal: 75%\n\nConvince studenti e famiglie.\nPrezzo desk: 20€\nCosto rifornimento: 15€',
+        difficulty: 'easy',
+        impact: 'medium',
+        cost: 15,
+        stock: 10,
+        appeal: 0.75,
+        purchasePrice: 20,
+        affinities: {
+          worker: 1.2,
+          precarious: 1.1,
+          unemployed: 0.9,
+          student: 1.6,     // +60% studenti (TEMA DIRETTO)
+          intellectual: 1.4, // +40% intellettuali (insegnanti)
+        },
+      },
+      {
+        id: 'healthcare_privatization',
+        name: 'Sanità Privata',
+        icon: '🏥',
+        description: 'Smantellamento sanità pubblica',
+        tooltip: 'Tema: Privatizzazione della sanità\n\nDifficoltà: ⭐⭐ Medio\nImpatto: ⭐⭐⭐ Alto\nAppeal: 85%\n\nMolto sentito, quasi tutti d\'accordo.\nPrezzo desk: 30€\nCosto rifornimento: 20€',
+        difficulty: 'medium',
+        impact: 'high',
+        cost: 20,
+        stock: 10,
+        appeal: 0.85,
+        purchasePrice: 30,
+        affinities: {
+          worker: 1.3,      // +30% trasversale
+          precarious: 1.3,
+          unemployed: 1.4,  // +40% disoccupati (no assicurazione)
+          student: 1.2,
+          intellectual: 1.2,
+        },
+      },
+      
+      // MEDI (35-50€)
+      {
+        id: 'gender_inequality',
+        name: 'Disparità di Genere',
+        icon: '⚖️',
+        description: 'Gap salariale e discriminazione',
+        tooltip: 'Tema: Disuguaglianza di genere sul lavoro\n\nDifficoltà: ⭐⭐ Medio\nImpatto: ⭐⭐⭐ Alto\nAppeal: 70%\n\nTema importante ma divisivo.\nPrezzo desk: 35€\nCosto rifornimento: 22€',
+        difficulty: 'medium',
+        impact: 'high',
+        cost: 22,
+        stock: 10,
+        appeal: 0.70,
+        purchasePrice: 35,
+        affinities: {
+          worker: 1.2,
+          precarious: 1.3,  // +30% precarie molto colpite
+          unemployed: 1.1,
+          student: 1.4,     // +40% giovani sensibili
+          intellectual: 1.3, // +30% intellettuali
+        },
+      },
+      {
+        id: 'tax_evasion',
+        name: 'Evasione Fiscale',
+        icon: '💸',
+        description: 'Miliardi sottratti alla collettività',
+        tooltip: 'Tema: Evasione fiscale e paradisi fiscali\n\nDifficoltà: ⭐⭐ Medio\nImpatto: ⭐⭐⭐ Alto\nAppeal: 78%\n\nQuasi tutti contro gli evasori.\nPrezzo desk: 40€\nCosto rifornimento: 25€',
+        difficulty: 'medium',
+        impact: 'high',
+        cost: 25,
+        stock: 10,
+        appeal: 0.78,
+        purchasePrice: 40,
+        affinities: {
+          worker: 1.4,      // +40% lavoratori pagano tasse
+          precarious: 1.3,
+          unemployed: 1.2,
+          student: 1.1,
+          intellectual: 1.2,
+        },
+      },
+      {
+        id: 'media_manipulation',
+        name: 'Manipolazione Mediatica',
+        icon: '📺',
+        description: 'Propaganda e fake news',
+        tooltip: 'Tema: Controllo dei media e disinformazione\n\nDifficoltà: ⭐⭐⭐ Difficile\nImpatto: ⭐⭐ Medio\nAppeal: 65%\n\nTema complesso, serve educazione.\nPrezzo desk: 45€\nCosto rifornimento: 28€',
+        difficulty: 'hard',
+        impact: 'medium',
+        cost: 28,
+        stock: 10,
+        appeal: 0.65,
+        purchasePrice: 45,
+        affinities: {
+          worker: 1.0,
+          precarious: 0.9,
+          unemployed: 0.8,
+          student: 1.2,     // +20% studenti media studies
+          intellectual: 1.5, // +50% intellettuali (TEMA LORO)
+        },
+      },
+      {
+        id: 'police_brutality',
+        name: 'Violenza Polizia',
+        icon: '🚨',
+        description: 'Abusi di potere e impunità',
+        tooltip: 'Tema: Brutalità poliziesca e repressione\n\nDifficoltà: ⭐⭐⭐ Difficile\nImpatto: ⭐⭐⭐ Alto\nAppeal: 60%\n\nTema controverso ma importante.\nPrezzo desk: 50€\nCosto rifornimento: 30€',
+        difficulty: 'hard',
+        impact: 'high',
+        cost: 30,
+        stock: 10,
+        appeal: 0.60,
+        purchasePrice: 50,
+        affinities: {
+          worker: 0.9,
+          precarious: 1.1,
+          unemployed: 1.3,  // +30% marginalizzati
+          student: 1.4,     // +40% giovani attivisti
+          intellectual: 1.2,
+        },
+      },
+      
+      // DIFFICILI (60-80€)
+      {
+        id: 'immigration_rights',
+        name: 'Diritti Migranti',
+        icon: '🌐',
+        description: 'Accoglienza e diritti umani',
+        tooltip: 'Tema: Diritti dei migranti e accoglienza\n\nDifficoltà: ⭐⭐⭐⭐ Molto Difficile\nImpatto: ⭐⭐⭐ Alto\nAppeal: 55%\n\nTema polarizzante, serve delicatezza.\nPrezzo desk: 60€\nCosto rifornimento: 35€',
+        difficulty: 'very_hard',
+        impact: 'high',
+        cost: 35,
+        stock: 10,
+        appeal: 0.55,
+        purchasePrice: 60,
+        affinities: {
+          worker: 0.8,      // -20% tema difficile
+          precarious: 1.0,
+          unemployed: 0.7,  // -30% competizione lavoro
+          student: 1.5,     // +50% giovani solidali
+          intellectual: 1.4, // +40% intellettuali
+        },
+      },
+      {
+        id: 'prison_abolition',
+        name: 'Abolizionismo Carcerario',
+        icon: '🔓',
+        description: 'Giustizia riparativa vs punizione',
+        tooltip: 'Tema: Abolizione carceri e giustizia riparativa\n\nDifficoltà: ⭐⭐⭐⭐ Molto Difficile\nImpatto: ⭐⭐ Medio\nAppeal: 45%\n\nTema radicale, minoritario.\nPrezzo desk: 70€\nCosto rifornimento: 40€',
+        difficulty: 'very_hard',
+        impact: 'medium',
+        cost: 40,
+        stock: 10,
+        appeal: 0.45,
+        purchasePrice: 70,
+        affinities: {
+          worker: 0.7,      // -30% tema contro intuizione
+          precarious: 0.8,
+          unemployed: 0.9,
+          student: 1.3,     // +30% idealisti
+          intellectual: 1.5, // +50% TEMA INTELLETTUALE
+        },
+      },
+      {
+        id: 'capitalism_critique',
+        name: 'Critica al Capitalismo',
+        icon: '⚙️',
+        description: 'Superamento del sistema',
+        tooltip: 'Tema: Critica sistemica al capitalismo\n\nDifficoltà: ⭐⭐⭐⭐⭐ Estrema\nImpatto: ⭐⭐⭐⭐ Molto Alto\nAppeal: 50%\n\nTema fondamentale ma difficile.\nPrezzo desk: 80€\nCosto rifornimento: 45€',
+        difficulty: 'extreme',
+        impact: 'very_high',
+        cost: 45,
+        stock: 10,
+        appeal: 0.50,
+        purchasePrice: 80,
+        affinities: {
+          worker: 1.1,      // +10% coscienti
+          precarious: 1.3,  // +30% sfruttati
+          unemployed: 1.4,  // +40% esclusi dal sistema
+          student: 1.3,     // +30% idealisti
+          intellectual: 1.6, // +60% TEMA TEORICO
+        },
+      },
+      {
+        id: 'lgbtq_rights',
+        name: 'Diritti LGBTQ+',
+        icon: '🏳️‍🌈',
+        description: 'Uguaglianza e liberazione queer',
+        tooltip: 'Tema: Diritti e liberazione LGBTQ+\n\nDifficoltà: ⭐⭐⭐ Difficile\nImpatto: ⭐⭐⭐ Alto\nAppeal: 68%\n\nSupport growing, ancora resistenze.\nPrezzo desk: 55€\nCosto rifornimento: 32€',
+        difficulty: 'hard',
+        impact: 'high',
+        cost: 32,
+        stock: 10,
+        appeal: 0.68,
+        purchasePrice: 55,
+        affinities: {
+          worker: 1.0,
+          precarious: 1.1,
+          unemployed: 0.9,
+          student: 1.6,     // +60% giovani generazione Z
+          intellectual: 1.3, // +30% progressisti
+        },
+      },
+      {
+        id: 'animal_liberation',
+        name: 'Liberazione Animale',
+        icon: '🐾',
+        description: 'Antispecismo e diritti animali',
+        tooltip: 'Tema: Liberazione animale e antispecismo\n\nDifficoltà: ⭐⭐⭐⭐ Molto Difficile\nImpatto: ⭐⭐ Medio\nAppeal: 40%\n\nTema di nicchia, molto radicale.\nPrezzo desk: 65€\nCosto rifornimento: 38€',
+        difficulty: 'very_hard',
+        impact: 'medium',
+        cost: 38,
+        stock: 10,
+        appeal: 0.40,
+        purchasePrice: 65,
+        affinities: {
+          worker: 0.6,      // -40% tema distante
+          precarious: 0.7,
+          unemployed: 0.5,  // -50% priorità diverse
+          student: 1.4,     // +40% attivisti giovani
+          intellectual: 1.2, // +20% filosofi
+        },
       },
     ],
     

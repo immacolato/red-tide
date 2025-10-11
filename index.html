@@ -91,6 +91,12 @@
       
       <!-- BOTTOM BAR - Azioni -->
       <div class="action-toolbar">
+        <button id="buy-desk-overlay" class="overlay-btn" title="Acquista nuovi desk tematici per espandere la propaganda.&#10;&#10;Ogni desk porta nuove tematiche per convertire cittadini.&#10;&#10;Prezzi variabili: 20-80€&#10;&#10;Più tematiche = Più varietà = Più conversioni!">
+          <span class="overlay-icon">🛒</span>
+          <span class="overlay-label">Compra Desk</span>
+          <span class="overlay-cost">€</span>
+        </button>
+        
         <button id="assembly-overlay" class="overlay-btn" title="Organizza un'assemblea per aumentare il Potere Assembleare.&#10;&#10;Effetto: +25% Potere Assembleare (permanente per la fase)&#10;Costo: 50⚡ (aumenta ogni uso: +60%)&#10;&#10;Il Potere Assembleare fornisce bonus permanenti:&#10;• Aumenta probabilità conversioni (fino a +20%)&#10;• Riduce decay coscienza (fino a -30%)&#10;• Aumenta donazioni (fino a +10%)&#10;&#10;Investi presto per massimizzare i benefici!">
           <span class="overlay-icon">📢</span>
           <span class="overlay-label">Assemblea</span>
@@ -126,6 +132,7 @@
           <div class="title-main">
             Red Tide
             <span class="version-badge" id="version-badge">v0.1.0</span>
+            <button class="debug-toggle" id="debug-toggle" title="Debug Tools">🛠️</button>
           </div>
           <div class="title-sub">Revolution Simulator</div>
         </div>
@@ -332,6 +339,75 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL DEBUG TOOLS -->
+<div id="debug-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content debug-modal-content">
+    <div class="modal-header">
+      <h2>🛠️ Debug Tools</h2>
+      <button id="close-debug-modal" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-subtitle">Strumenti per testing e sviluppo</p>
+      
+      <div class="debug-section">
+        <h3>⚡ Influenza</h3>
+        <div class="debug-controls">
+          <button class="debug-btn" data-action="add-influence" data-amount="50">+50</button>
+          <button class="debug-btn" data-action="add-influence" data-amount="100">+100</button>
+          <button class="debug-btn" data-action="add-influence" data-amount="500">+500</button>
+          <button class="debug-btn" data-action="add-influence" data-amount="1000">+1000</button>
+          <button class="debug-btn danger" data-action="set-influence" data-amount="0">Reset</button>
+        </div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>💰 Fondi</h3>
+        <div class="debug-controls">
+          <button class="debug-btn" data-action="add-money" data-amount="50">+50€</button>
+          <button class="debug-btn" data-action="add-money" data-amount="100">+100€</button>
+          <button class="debug-btn" data-action="add-money" data-amount="500">+500€</button>
+          <button class="debug-btn" data-action="add-money" data-amount="1000">+1000€</button>
+          <button class="debug-btn danger" data-action="set-money" data-amount="0">Reset</button>
+        </div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>🎯 Coscienza di Classe</h3>
+        <div class="debug-controls">
+          <button class="debug-btn" data-action="add-consciousness" data-amount="10">+10%</button>
+          <button class="debug-btn" data-action="add-consciousness" data-amount="25">+25%</button>
+          <button class="debug-btn" data-action="set-consciousness" data-amount="100">100%</button>
+          <button class="debug-btn danger" data-action="set-consciousness" data-amount="50">50%</button>
+        </div>
+      </div>
+      
+      <div class="debug-section">
+        <h3>📦 Stock Desk</h3>
+        <div class="debug-controls">
+          <button class="debug-btn" data-action="refill-all-topics">🔄 Ricarica Tutti (10)</button>
+          <button class="debug-btn" data-action="max-all-topics">⬆️ Max Tutti (30)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ACQUISTO DESK -->
+<div id="buy-desk-modal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>🛒 Acquista Nuovi Desk Tematici</h2>
+      <button id="close-buy-desk-modal" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-subtitle">Espandi la propaganda con nuove tematiche rivoluzionarie!</p>
+      <div id="purchasable-desks-list" class="purchasable-desks-grid">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </div>
   </div>
 </div>
 

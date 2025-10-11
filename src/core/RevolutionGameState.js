@@ -30,6 +30,7 @@ export class RevolutionGameState {
     this.infoDesks = [];
     this.topics = [];
     this.comrades = []; // Compagni assunti
+    this.purchasedTopicIds = []; // IDs delle tematiche acquistate
 
     // Coscienza di classe (ex-satisfaction)
     this.consciousness = RevolutionConfig.INITIAL_CONSCIOUSNESS;
@@ -485,6 +486,43 @@ export class RevolutionGameState {
   }
 
   /**
+   * Acquista un nuovo desk tematico
+   * @param {string} topicId - ID della tematica da acquistare
+   * @returns {boolean} True se riesce
+   */
+  purchaseTopicDesk(topicId) {
+    // Verifica se già acquistato
+    if (this.purchasedTopicIds.includes(topicId)) {
+      this.addLog(`❌ Desk "${topicId}" già acquistato`);
+      return false;
+    }
+    
+    // Trova il topic nella lista acquistabile
+    const phase = RevolutionConfig.PHASE_1;
+    const topicConfig = phase.purchasableTopics?.find(t => t.id === topicId);
+    
+    if (!topicConfig) {
+      this.addLog(`❌ Tematica "${topicId}" non trovata`);
+      return false;
+    }
+    
+    // Verifica se può permetterselo
+    if (this.money < topicConfig.purchasePrice) {
+      this.addLog(`❌ ${topicConfig.name}: serve ${topicConfig.purchasePrice}€`);
+      return false;
+    }
+    
+    // Acquista
+    if (this.spendMoney(topicConfig.purchasePrice)) {
+      this.purchasedTopicIds.push(topicId);
+      this.addLog(`✅ Desk acquistato: ${topicConfig.icon} ${topicConfig.name} (-${topicConfig.purchasePrice}€)`, 'important');
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
    * Aggiorna i compagni (effetti passivi e pagamenti)
    */
   updateComrades(dt) {
@@ -645,6 +683,7 @@ export class RevolutionGameState {
       topics: this.topics.map(t => t.toSaveData()),
       infoDesks: this.infoDesks.map(d => d.toSaveData()),
       comrades: this.comrades.map(c => c.toSaveData()),
+      purchasedTopicIds: this.purchasedTopicIds,
       version: RevolutionConfig.SAVE.VERSION,
     };
   }
@@ -653,7 +692,7 @@ export class RevolutionGameState {
    * Carica da salvataggio
    */
   fromSaveData(saveData) {
-    this.money = saveData.money || 20;
+    this.money = saveData.money || 10; // Aggiornato da 20 a 10
     this.influence = saveData.influence || RevolutionConfig.INITIAL_INFLUENCE;
     this.time = saveData.time || 0;
     this.currentPhase = saveData.currentPhase || RevolutionConfig.INITIAL_PHASE;
@@ -672,13 +711,14 @@ export class RevolutionGameState {
       skeptical: 0
     };
     this.totalAttempts = saveData.totalAttempts || 0;
+    this.purchasedTopicIds = saveData.purchasedTopicIds || [];
   }
 
   /**
    * Reset completo
    */
   reset() {
-    this.money = 20;
+    this.money = 10; // Aggiornato da 20 a 10
     this.influence = RevolutionConfig.INITIAL_INFLUENCE;
     this.time = 0;
     this.currentPhase = RevolutionConfig.INITIAL_PHASE;
@@ -703,5 +743,6 @@ export class RevolutionGameState {
     this.influenceEffects = [];
     this.logLines = [];
     this.comrades = [];
+    this.purchasedTopicIds = [];
   }
 }

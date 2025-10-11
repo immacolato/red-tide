@@ -297,7 +297,7 @@ function initGame() {
         appeal: topicData.appeal,
         difficulty: topicData.difficulty,
         impact: topicData.impact,
-        stock: 30, // Stock iniziale maggiore per permettere prime conversioni
+        stock: topicData.stock, // Usa lo stock dalla configurazione
       })
   );
 
@@ -389,6 +389,323 @@ function initGame() {
   renderTopicsPanel();
   renderComradesPanel();
   updateHUD();
+  
+  // Inizializza i modal
+  initPurchaseModal();
+  initDebugTools();
+}
+
+// ============================================================================
+// PURCHASE MODAL
+// ============================================================================
+
+function initPurchaseModal() {
+  const buyDeskBtn = document.getElementById('buy-desk-overlay');
+  const modal = document.getElementById('buy-desk-modal');
+  const closeBtn = document.getElementById('close-buy-desk-modal');
+  
+  if (!buyDeskBtn || !modal || !closeBtn) {
+    console.warn('⚠️ Elementi modal non trovati');
+    return;
+  }
+  
+  // Apri modal
+  buyDeskBtn.onclick = () => {
+    modal.style.display = 'flex';
+    renderPurchasableDesks();
+  };
+  
+  // Chiudi modal
+  closeBtn.onclick = () => {
+    modal.style.display = 'none';
+  };
+  
+  // Chiudi cliccando sull'overlay
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+  
+  // ESC per chiudere
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
+      modal.style.display = 'none';
+    }
+  });
+}
+
+function renderPurchasableDesks() {
+  const container = document.getElementById('purchasable-desks-list');
+  if (!container) return;
+  
+  const phase = phaseManager.getCurrentPhase();
+  const purchasableTopics = phase.purchasableTopics || [];
+  
+  container.innerHTML = '';
+  
+  purchasableTopics.forEach(topicConfig => {
+    const isOwned = gameState.purchasedTopicIds.includes(topicConfig.id);
+    const canAfford = gameState.money >= topicConfig.purchasePrice;
+    
+    const card = document.createElement('div');
+    card.className = `desk-card ${isOwned ? 'desk-card-owned' : ''}`;
+    
+    // Appeal bar width (0-100%)
+    const appealPercent = Math.min(100, topicConfig.appeal * 10);
+    
+    card.innerHTML = `
+      ${isOwned ? '<div class="desk-card-owned-badge">✓ Posseduto</div>' : ''}
+      
+      <div class="desk-card-header">
+        <div class="desk-card-icon">${topicConfig.icon}</div>
+        <div class="desk-card-title">
+          <div class="desk-card-name">${topicConfig.name}</div>
+          <div class="desk-card-price">${topicConfig.purchasePrice}€</div>
+        </div>
+      </div>
+      
+      <div class="desk-card-description">${topicConfig.description}</div>
+      
+      <div class="desk-card-stats">
+        <div class="desk-card-stat">
+          <span class="desk-card-stat-label">Appeal:</span>
+          <div class="desk-card-appeal-bar">
+            <div class="desk-card-appeal-fill" style="width: ${appealPercent}%"></div>
+          </div>
+        </div>
+        <div class="desk-card-stat">
+          <span class="desk-card-stat-label">Impatto:</span> ${topicConfig.impact}/10
+        </div>
+        <div class="desk-card-stat">
+          <span class="desk-card-stat-label">Ricarica:</span> ${topicConfig.cost}€
+        </div>
+      </div>
+      
+      <div class="desk-card-footer">
+        <div class="desk-card-difficulty ${topicConfig.difficulty}">
+          ${topicConfig.difficulty.replace('_', ' ')}
+        </div>
+        ${!isOwned ? `
+          <button class="desk-purchase-btn" data-topic-id="${topicConfig.id}" 
+                  ${!canAfford ? 'disabled' : ''}>
+            ${canAfford ? '💰 Acquista' : '❌ Troppo caro'}
+          </button>
+        ` : ''}
+      </div>
+    `;
+    
+    container.appendChild(card);
+    
+    // Event listener per il pulsante acquista
+    if (!isOwned) {
+      const purchaseBtn = card.querySelector('.desk-purchase-btn');
+      if (purchaseBtn) {
+        purchaseBtn.onclick = () => {
+          // Previeni doppi click
+          if (purchaseBtn.disabled) return;
+          purchaseBtn.disabled = true;
+          
+          handlePurchaseDesk(topicConfig);
+          
+          // Ri-abilita dopo un secondo (il modal viene ri-renderizzato comunque)
+          setTimeout(() => {
+            purchaseBtn.disabled = false;
+          }, 1000);
+        };
+      }
+    }
+  });
+}
+
+function handlePurchaseDesk(topicConfig) {
+  // Verifica nuovamente se non è già stato acquistato (protezione doppi click)
+  if (gameState.purchasedTopicIds.includes(topicConfig.id)) {
+    gameState.addLog(`⚠️ Desk "${topicConfig.name}" già acquistato`);
+    return;
+  }
+  
+  const success = gameState.purchaseTopicDesk(topicConfig.id);
+  
+  if (success) {
+    // Crea il nuovo Topic
+    const newTopic = new Topic({
+      id: topicConfig.id,
+      name: topicConfig.name,
+      icon: topicConfig.icon,
+      description: topicConfig.description,
+      cost: topicConfig.cost,
+      appeal: topicConfig.appeal,
+      difficulty: topicConfig.difficulty,
+      impact: topicConfig.impact,
+      stock: topicConfig.stock,
+    });
+    
+    gameState.topics.push(newTopic);
+    
+    // Crea il nuovo InfoDesk con l'indice corretto
+    const topicIndex = gameState.topics.length - 1;
+    const newDesk = createNewInfoDesk(topicIndex);
+    gameState.infoDesks.push(newDesk);
+    
+    // Aggiorna UI
+    renderPurchasableDesks(); // Ri-renderizza per mostrare "Posseduto"
+    renderTopicsPanel();
+    updateHUD();
+    
+    // Salva
+    saveManager.save(gameState, phaseManager);
+  }
+}
+
+function createNewInfoDesk(topicIndex) {
+  // Trova una posizione libera per il nuovo desk
+  const existingDesks = gameState.infoDesks;
+  const deskWidth = 220;
+  const deskHeight = 80;
+  const padding = 20;
+  
+  // Griglia di posizioni possibili (3 colonne)
+  const cols = 3;
+  const rows = Math.ceil((existingDesks.length + 1) / cols);
+  const gridSpacingX = (W - padding * 2) / cols;
+  const gridSpacingY = (H - padding * 2 - 200) / rows; // 200px spazio per HUD top/bottom
+  
+  // Cerca prima posizione libera nella griglia
+  let found = false;
+  let newX = padding + gridSpacingX / 2 - deskWidth / 2;
+  let newY = padding + 150 + gridSpacingY / 2 - deskHeight / 2; // 150px offset per HUD top
+  
+  for (let row = 0; row < rows && !found; row++) {
+    for (let col = 0; col < cols && !found; col++) {
+      const testX = padding + col * gridSpacingX + gridSpacingX / 2 - deskWidth / 2;
+      const testY = padding + 150 + row * gridSpacingY + gridSpacingY / 2 - deskHeight / 2;
+      
+      // Controlla se c'è collisione con desk esistenti
+      const hasCollision = existingDesks.some(desk => {
+        const dx = Math.abs(desk.x - testX);
+        const dy = Math.abs(desk.y - testY);
+        return dx < deskWidth && dy < deskHeight;
+      });
+      
+      if (!hasCollision) {
+        newX = testX;
+        newY = testY;
+        found = true;
+      }
+    }
+  }
+  
+  return new InfoDesk({
+    topicIndex,
+    x: newX,
+    y: newY,
+    w: deskWidth,
+    h: deskHeight,
+  });
+}
+
+// ============================================================================
+// DEBUG TOOLS
+// ============================================================================
+
+function initDebugTools() {
+  const debugToggle = document.getElementById('debug-toggle');
+  const modal = document.getElementById('debug-modal');
+  const closeBtn = document.getElementById('close-debug-modal');
+  
+  if (!debugToggle || !modal || !closeBtn) {
+    console.warn('⚠️ Debug tools elements not found');
+    return;
+  }
+  
+  // Apri modal debug
+  debugToggle.onclick = () => {
+    modal.style.display = 'flex';
+  };
+  
+  // Chiudi modal
+  closeBtn.onclick = () => {
+    modal.style.display = 'none';
+  };
+  
+  // Chiudi cliccando sull'overlay
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
+  
+  // ESC per chiudere
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
+      modal.style.display = 'none';
+    }
+  });
+  
+  // Event listener per tutti i bottoni debug
+  const debugBtns = document.querySelectorAll('.debug-btn');
+  debugBtns.forEach(btn => {
+    btn.onclick = () => handleDebugAction(btn);
+  });
+}
+
+function handleDebugAction(btn) {
+  const action = btn.dataset.action;
+  const amount = parseInt(btn.dataset.amount);
+  
+  switch (action) {
+  case 'add-influence':
+    gameState.influence += amount;
+    gameState.addLog(`🛠️ DEBUG: +${amount}⚡ influenza`, 'important');
+    break;
+    
+  case 'set-influence':
+    gameState.influence = amount;
+    gameState.addLog(`🛠️ DEBUG: Influenza impostata a ${amount}⚡`, 'important');
+    break;
+    
+  case 'add-money':
+    gameState.money += amount;
+    gameState.addLog(`🛠️ DEBUG: +${amount}€ fondi`, 'important');
+    break;
+    
+  case 'set-money':
+    gameState.money = amount;
+    gameState.addLog(`🛠️ DEBUG: Fondi impostati a ${amount}€`, 'important');
+    break;
+    
+  case 'add-consciousness':
+    gameState.consciousness = Math.min(100, gameState.consciousness + amount);
+    gameState.addLog(`🛠️ DEBUG: +${amount}% coscienza`, 'important');
+    break;
+    
+  case 'set-consciousness':
+    gameState.consciousness = amount;
+    gameState.addLog(`🛠️ DEBUG: Coscienza impostata a ${amount}%`, 'important');
+    break;
+    
+  case 'refill-all-topics':
+    gameState.topics.forEach(topic => {
+      topic.stock = 10;
+    });
+    gameState.addLog('🛠️ DEBUG: Tutti i desk ricaricati a 10', 'important');
+    break;
+    
+  case 'max-all-topics':
+    gameState.topics.forEach(topic => {
+      topic.stock = 30;
+    });
+    gameState.addLog('🛠️ DEBUG: Tutti i desk al massimo (30)', 'important');
+    break;
+  }
+  
+  // Aggiorna UI
+  updateHUD();
+  renderTopicsPanel();
+  
+  // Salva
+  saveManager.save(gameState, phaseManager);
 }
 
 // ============================================================================
@@ -522,6 +839,15 @@ function handleCitizenToDesk(citizen, dt) {
   };
 
   const topic = gameState.topics[desk.topicIndex];
+  
+  // Se il topic non esiste più (desk rimosso o indice invalido), cittadino se ne va
+  if (!topic) {
+    console.warn(`⚠️ Cittadino cerca topic index ${desk.topicIndex} che non esiste più`);
+    citizen.state = 'leave';
+    gameState.updateConsciousness(-2, 'Desk non disponibile');
+    return;
+  }
+  
   const assemblyBonuses = gameState.getAssemblyPowerBonuses();
   const result = citizen.updateToDesk(dt, targetPos, topic, gameState.consciousness, assemblyBonuses.conversionBonus);
 
@@ -570,18 +896,26 @@ function handleConversion(citizen, topic, desk) {
   updateHUD();
 
   // Salva occasionalmente
-  if (Math.random() < 0.15) saveManager.save(phaseManager);
+  if (Math.random() < 0.15) saveManager.save(gameState, phaseManager);
 }
 
 function handleCitizenLeavingWithReason(citizen, result) {
   if (result.reason === 'no_material') {
     const topic = gameState.topics[citizen.topicIndex];
-    gameState.addLog(`❌ ${citizen.type.name} → ${topic.name} esaurito`);
+    if (topic) {
+      gameState.addLog(`❌ ${citizen.type.name} → ${topic.name} esaurito`);
+    } else {
+      gameState.addLog(`❌ ${citizen.type.name} → desk non disponibile`);
+    }
     gameState.updateConsciousness(-3, 'Materiale esaurito');
     gameState.registerAttempt(); // Count as failed attempt
   } else if (result.reason === 'not_receptive') {
     const topic = gameState.topics[citizen.topicIndex];
-    gameState.addLog(`💭 ${citizen.type.name} → ${topic.name} inefficace`);
+    if (topic) {
+      gameState.addLog(`💭 ${citizen.type.name} → ${topic.name} inefficace`);
+    } else {
+      gameState.addLog(`💭 ${citizen.type.name} → non convinto`);
+    }
     gameState.updateConsciousness(-1, 'Non convincente');
     gameState.registerAttempt(); // Count as failed attempt
   } else if (result.reason === 'not_convinced') {
@@ -623,6 +957,12 @@ function render() {
   // Info desks con tema rivoluzionario
   for (const desk of gameState.infoDesks) {
     const topic = gameState.topics[desk.topicIndex];
+    
+    // Salta se il topic non esiste (indice non valido)
+    if (!topic) {
+      console.warn(`⚠️ Desk con topicIndex ${desk.topicIndex} non ha topic valido`);
+      continue;
+    }
 
     // Funzione helper per arrotondare rettangoli
     const roundRect = (x, y, w, h, radius) => {
@@ -681,7 +1021,7 @@ function render() {
       ctx.fillText(topic.name, nameX, titleY);
 
       // PARTE INFERIORE: Barra stock ridisegnata
-      const stockRatio = topic.stock / 30;
+      const stockRatio = topic.stock / 10; // Stock massimo iniziale è 10
       const barY = desk.y + desk.h - 28;
       const barHeight = 20;
       
@@ -703,8 +1043,8 @@ function render() {
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(barX, barY, barW, barHeight);
       
-      // Riempimento colorato con colori più vividi
-      const barColor = topic.stock === 0 ? '#c0392b' : topic.stock < 10 ? '#e67e22' : '#27ae60';
+      // Riempimento colorato con colori più vividi (soglie basate su stock max 10)
+      const barColor = topic.stock === 0 ? '#c0392b' : topic.stock < 5 ? '#e67e22' : '#27ae60';
       ctx.fillStyle = barColor;
       const fillWidth = barW * Math.min(stockRatio, 1);
       ctx.fillRect(barX, barY, fillWidth, barHeight);
@@ -1666,11 +2006,15 @@ function setupEventListeners() {
     canvas.addEventListener('mouseup', () => {
       if (draggedDesk) {
         draggedDesk.endDrag();
+        
+        // Reset sicuro: assicurati che tutti i desk abbiano isDragging = false
+        gameState.infoDesks.forEach(d => d.isDragging = false);
+        
         draggedDesk = null;
         canvas.style.cursor = 'grab';
         
         // Salva le nuove posizioni
-        saveManager.save(phaseManager);
+        saveManager.save(gameState, phaseManager);
         gameState.addLog('📍 Posizione desk salvata');
       }
     });
@@ -1679,6 +2023,10 @@ function setupEventListeners() {
     canvas.addEventListener('mouseleave', () => {
       if (draggedDesk) {
         draggedDesk.endDrag();
+        
+        // Reset sicuro: assicurati che tutti i desk abbiano isDragging = false
+        gameState.infoDesks.forEach(d => d.isDragging = false);
+        
         draggedDesk = null;
         canvas.style.cursor = 'default';
       }
