@@ -640,22 +640,33 @@ function render() {
     };
 
     const cornerRadius = 8;
+    const isDragging = desk.isDragging;
 
-    // Ombra arrotondata
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    roundRect(desk.x + 4, desk.y + 4, desk.w, desk.h, cornerRadius);
+    // Ombra arrotondata (più grande se sta draggando)
+    ctx.fillStyle = isDragging ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)';
+    const shadowOffset = isDragging ? 8 : 4;
+    roundRect(desk.x + shadowOffset, desk.y + shadowOffset, desk.w, desk.h, cornerRadius);
     ctx.fill();
 
-    // Desk background arrotondato
-    ctx.fillStyle = '#34495e';
+    // Desk background arrotondato (più chiaro se sta draggando)
+    ctx.fillStyle = isDragging ? '#455a64' : '#34495e';
     roundRect(desk.x, desk.y, desk.w, desk.h, cornerRadius);
     ctx.fill();
 
-    // Bordo rosso arrotondato
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 4;
+    // Bordo rosso arrotondato (più spesso e luminoso se sta draggando)
+    ctx.strokeStyle = isDragging ? '#ff6b6b' : '#e74c3c';
+    ctx.lineWidth = isDragging ? 6 : 4;
     roundRect(desk.x, desk.y, desk.w, desk.h, cornerRadius);
     ctx.stroke();
+
+    // Indicatore drag (icona mano)
+    if (isDragging) {
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillText('✊', desk.x + desk.w / 2, desk.y + desk.h / 2);
+    }
 
     // Label topic - layout migliorato per desk 220x80
     if (topic) {
@@ -1512,8 +1523,11 @@ function renderComradesPanel() {
 // EVENT LISTENERS
 // ============================================================================
 
+// Drag & Drop state
+let draggedDesk = null;
+
 function setupEventListeners() {
-  // Canvas mousemove handler - per cambiare cursore sui bottoni
+  // Canvas mousemove handler - per cambiare cursore sui bottoni e drag
   const canvas = document.getElementById('canvas');
   if (canvas) {
     canvas.addEventListener('mousemove', (e) => {
@@ -1522,8 +1536,23 @@ function setupEventListeners() {
       const scaleY = H / rect.height;
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
+
+      // Handle drag
+      if (draggedDesk) {
+        draggedDesk.updateDrag(mouseX, mouseY, W, H);
+        return;
+      }
       
       let overButton = false;
+      let overDesk = false;
+      
+      // Check se il mouse è sopra un desk (per cursor grab)
+      for (const desk of gameState.infoDesks) {
+        if (desk.contains(mouseX, mouseY)) {
+          overDesk = true;
+          break;
+        }
+      }
       
       // Check se il mouse è sopra un pulsante X dei compagni
       for (const comrade of gameState.comrades) {
@@ -1572,7 +1601,79 @@ function setupEventListeners() {
       }
       
       // Cambia cursore
-      canvas.style.cursor = overButton ? 'pointer' : 'default';
+      if (overButton) {
+        canvas.style.cursor = 'pointer';
+      } else if (overDesk) {
+        canvas.style.cursor = 'grab';
+      } else {
+        canvas.style.cursor = 'default';
+      }
+    });
+
+    // Canvas mousedown handler - inizia drag
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+      const mouseY = (e.clientY - rect.top) * scaleY;
+
+      // Check se si clicca su un pulsante (non iniziare drag)
+      // Pulsanti X compagni
+      for (const comrade of gameState.comrades) {
+        if (!comrade.active || !comrade.removeButton) continue;
+        const btn = comrade.removeButton;
+        const btnDx = mouseX - btn.x;
+        const btnDy = mouseY - btn.y;
+        const btnDist = Math.sqrt(btnDx * btnDx + btnDy * btnDy);
+        if (btnDist < btn.r) {
+          return; // Non iniziare drag se si clicca su un pulsante
+        }
+      }
+
+      // Pulsanti + dei desk
+      for (const desk of gameState.infoDesks) {
+        const btnSize = 36;
+        const btnX = desk.x + desk.w - btnSize / 2 - 10;
+        const btnY = desk.y - btnSize - 4;
+        if (mouseX >= btnX && mouseX <= btnX + btnSize && 
+            mouseY >= btnY && mouseY <= btnY + btnSize) {
+          return; // Non iniziare drag se si clicca sul pulsante +
+        }
+      }
+
+      // Check se si clicca su un desk per iniziare drag
+      for (let i = gameState.infoDesks.length - 1; i >= 0; i--) {
+        const desk = gameState.infoDesks[i];
+        if (desk.contains(mouseX, mouseY)) {
+          draggedDesk = desk;
+          desk.startDrag(mouseX, mouseY);
+          canvas.style.cursor = 'grabbing';
+          return;
+        }
+      }
+    });
+
+    // Canvas mouseup handler - termina drag
+    canvas.addEventListener('mouseup', () => {
+      if (draggedDesk) {
+        draggedDesk.endDrag();
+        draggedDesk = null;
+        canvas.style.cursor = 'grab';
+        
+        // Salva le nuove posizioni
+        saveManager.save(phaseManager);
+        gameState.addLog('📍 Posizione desk salvata');
+      }
+    });
+
+    // Canvas mouseleave handler - termina drag se esci dal canvas
+    canvas.addEventListener('mouseleave', () => {
+      if (draggedDesk) {
+        draggedDesk.endDrag();
+        draggedDesk = null;
+        canvas.style.cursor = 'default';
+      }
     });
     
     canvas.addEventListener('click', (e) => {

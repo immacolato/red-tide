@@ -24,6 +24,11 @@ export class InfoDesk {
     this.w = options.w;
     this.h = options.h;
     this.topicIndex = options.topicIndex;
+    
+    // Drag & drop state
+    this.isDragging = false;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
   }
 
   /**
@@ -50,6 +55,47 @@ export class InfoDesk {
       py >= this.y &&
       py <= this.y + this.h
     );
+  }
+
+  /**
+   * Inizia il drag del desk
+   * @param {number} mouseX - X mouse
+   * @param {number} mouseY - Y mouse
+   */
+  startDrag(mouseX, mouseY) {
+    this.isDragging = true;
+    this.dragOffsetX = mouseX - this.x;
+    this.dragOffsetY = mouseY - this.y;
+  }
+
+  /**
+   * Aggiorna la posizione durante il drag
+   * @param {number} mouseX - X mouse
+   * @param {number} mouseY - Y mouse
+   * @param {number} canvasWidth - Larghezza canvas per vincoli
+   * @param {number} canvasHeight - Altezza canvas per vincoli
+   */
+  updateDrag(mouseX, mouseY, canvasWidth, canvasHeight) {
+    if (!this.isDragging) return;
+
+    // Calcola nuova posizione
+    let newX = mouseX - this.dragOffsetX;
+    let newY = mouseY - this.dragOffsetY;
+
+    // Vincoli: mantieni il desk dentro il canvas
+    const margin = 10;
+    newX = Math.max(margin, Math.min(canvasWidth - this.w - margin, newX));
+    newY = Math.max(40, Math.min(canvasHeight - this.h - 100, newY)); // 40 top per header, 100 bottom per log
+
+    this.x = newX;
+    this.y = newY;
+  }
+
+  /**
+   * Termina il drag
+   */
+  endDrag() {
+    this.isDragging = false;
   }
 
   /**
