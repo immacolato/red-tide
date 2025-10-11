@@ -659,15 +659,6 @@ function render() {
     roundRect(desk.x, desk.y, desk.w, desk.h, cornerRadius);
     ctx.stroke();
 
-    // Indicatore drag (icona mano)
-    if (isDragging) {
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.fillText('✊', desk.x + desk.w / 2, desk.y + desk.h / 2);
-    }
-
     // Label topic - layout migliorato per desk 220x80
     if (topic) {
       // PARTE SUPERIORE: Icon + Nome allineati a sinistra
@@ -765,6 +756,22 @@ function render() {
       ctx.textBaseline = 'middle';
       ctx.fillText('+', btnX + btnSize / 2, btnY + btnSize / 2);
       ctx.textBaseline = 'alphabetic';
+    }
+
+    // Indicatore drag (icona mano) - RENDERIZZATO SOPRA TUTTO
+    if (isDragging) {
+      // Background semi-trasparente per far risaltare l'icona
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.arc(desk.x + desk.w / 2, desk.y + desk.h / 2, 30, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Icona mano grande e visibile
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+      ctx.fillText('✊', desk.x + desk.w / 2, desk.y + desk.h / 2);
     }
   }
 
