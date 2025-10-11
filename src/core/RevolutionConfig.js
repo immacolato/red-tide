@@ -27,19 +27,24 @@ export const RevolutionConfig = {
   // ============================================================================
   ATTRITION: {
     // Intervallo di controllo (secondi)
-    CHECK_INTERVAL: 15,
+    CHECK_INTERVAL: 10, // Ridotto da 15 per controlli più frequenti
     
     // Tassi di abbandono basati sulla coscienza di classe
+    // I convertiti abbandonano se la coscienza scende troppo
     CONSCIOUSNESS_RATES: {
-      CRITICAL: { threshold: 30, rate: 0.08 }, // 8% ogni check se coscienza < 30
-      LOW: { threshold: 50, rate: 0.03 },      // 3% ogni check se coscienza < 50
+      CATASTROPHIC: { threshold: 20, rate: 0.15 }, // 15% ogni 10s se < 20 (DISASTRO!)
+      CRITICAL: { threshold: 30, rate: 0.10 },     // 10% ogni 10s se < 30 (molto grave)
+      VERY_LOW: { threshold: 40, rate: 0.06 },     // 6% ogni 10s se < 40 (grave)
+      LOW: { threshold: 50, rate: 0.03 },          // 3% ogni 10s se < 50 (moderato)
+      MEDIUM: { threshold: 60, rate: 0.01 },       // 1% ogni 10s se < 60 (lieve)
     },
     
-    // Abbandono naturale (sempre presente)
-    NATURAL_RATE: 0.01, // 1% ogni check (persone che si trasferiscono, cambiano vita, etc.)
+    // Abbandono naturale (sempre presente, anche con alta coscienza)
+    // Rappresenta persone che: si trasferiscono, cambiano vita, bruciano out, etc.
+    NATURAL_RATE: 0.005, // 0.5% ogni 10s (~3% al minuto con alta coscienza)
     
-    // Penalità coscienza per ogni abbandono
-    CONSCIOUSNESS_PENALTY_PER_LOSS: 0.5,
+    // Penalità coscienza per ogni abbandono (feedback negativo)
+    CONSCIOUSNESS_PENALTY_PER_LOSS: 0.3, // Ridotto da 0.5 per evitare spirale mortale
   },
 
   // ============================================================================

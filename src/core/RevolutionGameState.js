@@ -356,35 +356,60 @@ export class RevolutionGameState {
     const lostByType = {};
     const { CONSCIOUSNESS_RATES, NATURAL_RATE, CONSCIOUSNESS_PENALTY_PER_LOSS } = RevolutionConfig.ATTRITION;
     
-    // 1. Abbandono per coscienza di classe bassa (critico)
-    if (this.consciousness < CONSCIOUSNESS_RATES.CRITICAL.threshold) {
-      const lost = this.applyAttritionRate(CONSCIOUSNESS_RATES.CRITICAL.rate, lostByType);
-      totalLost += lost;
-      if (lost > 0) {
-        this.addLog(`📉 CRISI! -${lost} compagni abbandonano`, 'important');
+    // Determina quale livello di abbandono applicare in base alla coscienza
+    let consciousnessLost = 0;
+    let message = '';
+    
+    if (this.consciousness < CONSCIOUSNESS_RATES.CATASTROPHIC.threshold) {
+      // < 20%: CATASTROFE - 15% se ne va ogni 10s
+      consciousnessLost = this.applyAttritionRate(CONSCIOUSNESS_RATES.CATASTROPHIC.rate, lostByType);
+      if (consciousnessLost > 0) {
+        message = `💀 CATASTROFE! -${consciousnessLost} compagni fuggono!`;
+        this.addLog(message, 'important');
       }
-    } 
-    // 2. Abbandono per coscienza moderatamente bassa
-    else if (this.consciousness < CONSCIOUSNESS_RATES.LOW.threshold) {
-      const lost = this.applyAttritionRate(CONSCIOUSNESS_RATES.LOW.rate, lostByType);
-      totalLost += lost;
-      if (lost > 0) {
-        this.addLog(`📉 Coscienza bassa: -${lost}`);
+    } else if (this.consciousness < CONSCIOUSNESS_RATES.CRITICAL.threshold) {
+      // < 30%: CRISI - 10% se ne va ogni 10s
+      consciousnessLost = this.applyAttritionRate(CONSCIOUSNESS_RATES.CRITICAL.rate, lostByType);
+      if (consciousnessLost > 0) {
+        message = `📉 CRISI! -${consciousnessLost} compagni abbandonano`;
+        this.addLog(message, 'important');
+      }
+    } else if (this.consciousness < CONSCIOUSNESS_RATES.VERY_LOW.threshold) {
+      // < 40%: MOLTO BASSA - 6% se ne va ogni 10s
+      consciousnessLost = this.applyAttritionRate(CONSCIOUSNESS_RATES.VERY_LOW.rate, lostByType);
+      if (consciousnessLost > 0) {
+        message = `⚠️ Morale critica: -${consciousnessLost}`;
+        this.addLog(message);
+      }
+    } else if (this.consciousness < CONSCIOUSNESS_RATES.LOW.threshold) {
+      // < 50%: BASSA - 3% se ne va ogni 10s
+      consciousnessLost = this.applyAttritionRate(CONSCIOUSNESS_RATES.LOW.rate, lostByType);
+      if (consciousnessLost > 0) {
+        message = `📉 Coscienza bassa: -${consciousnessLost}`;
+        this.addLog(message);
+      }
+    } else if (this.consciousness < CONSCIOUSNESS_RATES.MEDIUM.threshold) {
+      // < 60%: MEDIA - 1% se ne va ogni 10s
+      consciousnessLost = this.applyAttritionRate(CONSCIOUSNESS_RATES.MEDIUM.rate, lostByType);
+      if (consciousnessLost > 0) {
+        message = `� Alcuni dubbi: -${consciousnessLost}`;
+        this.addLog(message);
       }
     }
     
-    // 3. Abbandono naturale casuale (sempre presente, anche con alta coscienza)
-    // Rappresenta persone che si trasferiscono, cambiano vita, etc.
+    totalLost += consciousnessLost;
+    
+    // Abbandono naturale (sempre presente, anche con alta coscienza)
+    // Rappresenta persone che si trasferiscono, cambiano vita, burnout, etc.
     const naturalLost = this.applyAttritionRate(NATURAL_RATE, lostByType);
     totalLost += naturalLost;
-    if (naturalLost > 0) {
+    // Log solo se significativo (almeno 2 persone)
+    if (naturalLost >= 2) {
       this.addLog(`🚪 -${naturalLost} (motivi personali)`);
     }
     
-    // 4. Abbandono per frustrazione (no progressi di fase da molto tempo)
-    // TODO: Implementare quando avremo tracking del progresso di fase
-    
-    // Aggiorna coscienza: ogni abbandono riduce la morale
+    // Aggiorna coscienza: ogni abbandono crea sfiducia (feedback negativo)
+    // Ma con penalty ridotto per evitare spirale mortale
     if (totalLost > 0) {
       this.updateConsciousness(-totalLost * CONSCIOUSNESS_PENALTY_PER_LOSS, 'Abbandoni');
     }
